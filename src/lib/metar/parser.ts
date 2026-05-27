@@ -9,10 +9,12 @@ import type {
 } from "@/types/metar";
 
 const CLOUD_RE = /^(SKC|CLR|FEW|SCT|BKN|OVC|VV)(\d{3}|\/\/\/)?(CB|TCU)?$/;
+const OBS_TIME_RE = /^\d{6}Z$/;
 
 export function parseMetar(rawText: string): ParsedMetar {
   const tokens = rawText.trim().split(/\s+/);
   const station = tokens[0] ?? "XXXX";
+  const observedAt = OBS_TIME_RE.test(tokens[1] ?? "") ? tokens[1] : undefined;
 
   const wind = tokens.map(parseWind).find(Boolean) as MetarWind | undefined;
   const visibility = tokens.map(parseVisibility).find(Boolean) as MetarVisibility | undefined;
@@ -20,10 +22,16 @@ export function parseMetar(rawText: string): ParsedMetar {
   const temperature = tokens.map(parseTemperature).find(Boolean) as MetarTemperature | undefined;
   const altimeter = tokens.map(parseAltimeter).find(Boolean) as MetarAltimeter | undefined;
 
-  const weatherCodes = tokens.filter((token) => /^[-+]?([A-Z]{2,})$/.test(token));
+  const weatherCodes = tokens.filter(
+    (token) =>
+      token !== station &&
+      !OBS_TIME_RE.test(token) &&
+      /^[-+]?([A-Z]{2,})$/.test(token),
+  );
 
   return {
     station,
+    observedAt,
     rawText,
     wind,
     visibility,
@@ -48,7 +56,7 @@ export function deriveFlightCategory(
   return "VFR";
 }
 
-function parseWind(token: string): MetarWind | undefined {
+export function parseWind(token: string): MetarWind | undefined {
   const match = token.match(/^(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?KT$/);
   if (!match) return undefined;
   return {
@@ -58,9 +66,13 @@ function parseWind(token: string): MetarWind | undefined {
   };
 }
 
-function parseVisibility(token: string): MetarVisibility | undefined {
-  if (token === "9999") {
-    return { statuteMiles: 6.2, raw: token };
+export function parseVisibility(token: string): MetarVisibility | undefined {
+  if (/^\d{4}$/.test(token)) {
+    const meters = Number(token);
+    return {
+      statuteMiles: meters === 9999 ? 6.2 : Number((meters / 1609.34).toFixed(2)),
+      raw: token,
+    };
   }
 
   if (/^\d{1,2}SM$/.test(token)) {
@@ -78,7 +90,7 @@ function parseVisibility(token: string): MetarVisibility | undefined {
   return undefined;
 }
 
-function parseCloud(token: string): MetarCloudLayer | undefined {
+export function parseCloud(token: string): MetarCloudLayer | undefined {
   const match = token.match(CLOUD_RE);
   if (!match) return undefined;
 
@@ -89,7 +101,7 @@ function parseCloud(token: string): MetarCloudLayer | undefined {
   };
 }
 
-function parseTemperature(token: string): MetarTemperature | undefined {
+export function parseTemperature(token: string): MetarTemperature | undefined {
   const match = token.match(/^(M?\d{2})\/(M?\d{2})$/);
   if (!match) return undefined;
 
@@ -99,7 +111,7 @@ function parseTemperature(token: string): MetarTemperature | undefined {
   };
 }
 
-function parseAltimeter(token: string): MetarAltimeter | undefined {
+export function parseAltimeter(token: string): MetarAltimeter | undefined {
   const usMatch = token.match(/^A(\d{4})$/);
   if (usMatch) {
     return { inchesHg: Number(usMatch[1]) / 100 };
