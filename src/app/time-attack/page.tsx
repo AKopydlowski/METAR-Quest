@@ -1,15 +1,30 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { buildQuestionBank } from "@/lib/metar/questions";
 import { loadProgress, saveProgress } from "@/lib/storage/progressStorage";
+import { buildQuestionBank } from "@/lib/metar/questions";
+import type { QuizQuestion } from "@/types/quiz";
 
 export default function TimeAttackPage() {
-  const questions = useMemo(() => buildQuestionBank(), []);
+  const localQuestions = useMemo(() => buildQuestionBank(), []);
+  const [questions, setQuestions] = useState<QuizQuestion[]>(localQuestions);
+  const [source, setSource] = useState("local");
   const [timeLeft, setTimeLeft] = useState(60);
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetch("/api/quiz/time-attack")
+      .then((res) => res.json())
+      .then((data: { source?: string; questions?: QuizQuestion[] }) => {
+        if (data.questions?.length) {
+          setQuestions(data.questions);
+          setSource(data.source ?? "live");
+        }
+      })
+      .catch(() => setSource("local"));
+  }, []);
 
   useEffect(() => {
     if (timeLeft <= 0) return;
@@ -44,30 +59,40 @@ export default function TimeAttackPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-3xl p-6">
-      <h1 className="text-2xl font-semibold">Time Attack</h1>
-      <p className="mt-2">Time left: {timeLeft}s | Score: {score}</p>
-      <p className="mt-4">{q.prompt}</p>
-      <div className="mt-4 grid gap-2">
-        {q.choices.map((choice) => (
-          <button
-            key={choice.id}
-            disabled={timeLeft <= 0 || Boolean(selectedId)}
-            onClick={() => chooseAnswer(choice.id, choice.isCorrect)}
-            className={`rounded border p-3 text-left transition disabled:opacity-50 ${
-              !selectedId
-                ? "hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                : choice.isCorrect
-                  ? "border-emerald-500 bg-emerald-500/10"
-                  : selectedId === choice.id
-                    ? "border-rose-500 bg-rose-500/10"
-                    : "opacity-70"
-            }`}
-          >
-            {choice.label}
-          </button>
-        ))}
-      </div>
+    <main className="mx-auto w-full max-w-4xl p-6">
+      <section className="rounded-2xl border border-sky-200/40 bg-gradient-to-br from-sky-500/15 via-indigo-500/10 to-transparent p-6 shadow-lg backdrop-blur">
+        <h1 className="text-3xl font-bold tracking-tight">Time Attack</h1>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">Źródło pytań: {source === "live-api" ? "Live API (większa baza)" : "Lokalna baza"}</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border p-3"><p className="text-xs uppercase">Czas</p><p className="text-2xl font-semibold">{timeLeft}s</p></div>
+          <div className="rounded-xl border p-3"><p className="text-xs uppercase">Wynik</p><p className="text-2xl font-semibold">{score}</p></div>
+          <div className="rounded-xl border p-3"><p className="text-xs uppercase">Pula pytań</p><p className="text-2xl font-semibold">{questions.length}</p></div>
+        </div>
+      </section>
+
+      <section className="mt-5 rounded-2xl border bg-white/80 p-6 shadow-md dark:bg-zinc-900/80">
+        <p className="text-lg font-medium">{q.prompt}</p>
+        <div className="mt-4 grid gap-2">
+          {q.choices.map((choice) => (
+            <button
+              key={choice.id}
+              disabled={timeLeft <= 0 || Boolean(selectedId)}
+              onClick={() => chooseAnswer(choice.id, choice.isCorrect)}
+              className={`rounded-xl border p-3 text-left transition disabled:opacity-50 ${
+                !selectedId
+                  ? "hover:-translate-y-0.5 hover:border-sky-400 hover:bg-sky-50 dark:hover:bg-zinc-800"
+                  : choice.isCorrect
+                    ? "border-emerald-500 bg-emerald-500/10"
+                    : selectedId === choice.id
+                      ? "border-rose-500 bg-rose-500/10"
+                      : "opacity-70"
+              }`}
+            >
+              {choice.label}
+            </button>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }

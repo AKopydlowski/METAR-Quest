@@ -1,3 +1,4 @@
+import type { ParsedMetar } from "@/types/metar";
 import type { QuizChoice, QuizQuestion } from "@/types/quiz";
 import { metarExamples } from "./examples";
 
@@ -17,62 +18,60 @@ function ceilingFromClouds(rawText: string): string {
   return "No significant ceiling";
 }
 
-export function buildQuestionBank(): QuizQuestion[] {
-  const bank: QuizQuestion[] = [];
-
-  for (const example of metarExamples) {
-    const metar = example.parsed;
-
-    bank.push({
-      id: `q-${example.id}-category`,
+function buildQuestionsFromMetar(idPrefix: string, metarRaw: string, metar: ParsedMetar): QuizQuestion[] {
+  return [
+    {
+      id: `q-${idPrefix}-category`,
       prompt: `Based on the METAR below, what is the flight category at ${metar.station}?`,
       metar,
-      metarRaw: example.rawText,
+      metarRaw,
       difficulty: "easy",
       skillTag: "clouds",
       choices: buildChoices(metar.flightCategory ?? "VFR", ["MVFR", "IFR", "LIFR"]),
-    });
-
-    bank.push({
-      id: `q-${example.id}-wind`,
+    },
+    {
+      id: `q-${idPrefix}-wind`,
       prompt: `From this METAR, what wind speed is reported for ${metar.station}?`,
       metar,
-      metarRaw: example.rawText,
+      metarRaw,
       difficulty: "easy",
       skillTag: "wind",
-      choices: buildChoices(`${metar.wind.speedKt} KT`, [`${Math.max(metar.wind.speedKt - 4, 0)} KT`, `${metar.wind.speedKt + 6} KT`, "Calm"],),
-    });
-
-    bank.push({
-      id: `q-${example.id}-vis`,
+      choices: buildChoices(`${metar.wind.speedKt} KT`, [`${Math.max(metar.wind.speedKt - 4, 0)} KT`, `${metar.wind.speedKt + 6} KT`, "Calm"]),
+    },
+    {
+      id: `q-${idPrefix}-vis`,
       prompt: `Looking only at the METAR below, what visibility is reported at ${metar.station}?`,
       metar,
-      metarRaw: example.rawText,
+      metarRaw,
       difficulty: "medium",
       skillTag: "visibility",
       choices: buildChoices(`${metar.visibility.statuteMiles} SM`, ["1 SM", "3 SM", "10+ SM"]),
-    });
-
-    bank.push({
-      id: `q-${example.id}-ceiling`,
+    },
+    {
+      id: `q-${idPrefix}-ceiling`,
       prompt: "What cloud/ceiling interpretation best matches this exact METAR string?",
       metar,
-      metarRaw: example.rawText,
+      metarRaw,
       difficulty: "medium",
       skillTag: "clouds",
-      choices: buildChoices(ceilingFromClouds(example.rawText), ["Scattered only (no ceiling)", "Clear sky", "Thunderstorm ceiling"]),
-    });
-
-    bank.push({
-      id: `q-${example.id}-tempdew`,
+      choices: buildChoices(ceilingFromClouds(metarRaw), ["Scattered only (no ceiling)", "Clear sky", "Thunderstorm ceiling"]),
+    },
+    {
+      id: `q-${idPrefix}-tempdew`,
       prompt: `In this METAR, which temperature/dewpoint pair for ${metar.station} is correct?`,
       metar,
-      metarRaw: example.rawText,
+      metarRaw,
       difficulty: "hard",
       skillTag: "temperature",
       choices: buildChoices(`${metar.temperature.celsius}/${metar.temperature.dewpointCelsius}°C`, [`${metar.temperature.dewpointCelsius}/${metar.temperature.celsius}°C`, `${metar.temperature.celsius + 3}/${metar.temperature.dewpointCelsius}°C`, `${metar.temperature.celsius}/${metar.temperature.dewpointCelsius - 4}°C`]),
-    });
-  }
+    },
+  ];
+}
 
-  return bank;
+export function buildQuestionBank(): QuizQuestion[] {
+  return metarExamples.flatMap((example) => buildQuestionsFromMetar(example.id, example.rawText, example.parsed));
+}
+
+export function buildDynamicQuestionBank(entries: Array<{ id: string; rawText: string; metar: ParsedMetar }>): QuizQuestion[] {
+  return entries.flatMap((entry) => buildQuestionsFromMetar(entry.id, entry.rawText, entry.metar));
 }
