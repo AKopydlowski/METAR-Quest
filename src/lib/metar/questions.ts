@@ -25,8 +25,9 @@ export function buildQuestionBank(): QuizQuestion[] {
 
     bank.push({
       id: `q-${example.id}-category`,
-      prompt: `What is the flight category for ${metar.station}?`,
+      prompt: `Based on the METAR below, what is the flight category at ${metar.station}?`,
       metar,
+      metarRaw: example.rawText,
       difficulty: "easy",
       skillTag: "clouds",
       choices: buildChoices(metar.flightCategory ?? "VFR", ["MVFR", "IFR", "LIFR"]),
@@ -34,17 +35,19 @@ export function buildQuestionBank(): QuizQuestion[] {
 
     bank.push({
       id: `q-${example.id}-wind`,
-      prompt: `How strong is the wind in this report from ${metar.station}?`,
+      prompt: `From this METAR, what wind speed is reported for ${metar.station}?`,
       metar,
+      metarRaw: example.rawText,
       difficulty: "easy",
       skillTag: "wind",
-      choices: buildChoices(`${metar.wind.speedKt} KT`, [`${Math.max(metar.wind.speedKt - 4, 0)} KT`, `${metar.wind.speedKt + 6} KT`, "Calm"]),
+      choices: buildChoices(`${metar.wind.speedKt} KT`, [`${Math.max(metar.wind.speedKt - 4, 0)} KT`, `${metar.wind.speedKt + 6} KT`, "Calm"],),
     });
 
     bank.push({
       id: `q-${example.id}-vis`,
-      prompt: `What visibility is reported for ${metar.station}?`,
+      prompt: `Looking only at the METAR below, what visibility is reported at ${metar.station}?`,
       metar,
+      metarRaw: example.rawText,
       difficulty: "medium",
       skillTag: "visibility",
       choices: buildChoices(`${metar.visibility.statuteMiles} SM`, ["1 SM", "3 SM", "10+ SM"]),
@@ -52,8 +55,9 @@ export function buildQuestionBank(): QuizQuestion[] {
 
     bank.push({
       id: `q-${example.id}-ceiling`,
-      prompt: `Which cloud/ceiling interpretation best matches this METAR?`,
+      prompt: "What cloud/ceiling interpretation best matches this exact METAR string?",
       metar,
+      metarRaw: example.rawText,
       difficulty: "medium",
       skillTag: "clouds",
       choices: buildChoices(ceilingFromClouds(example.rawText), ["Scattered only (no ceiling)", "Clear sky", "Thunderstorm ceiling"]),
@@ -61,8 +65,9 @@ export function buildQuestionBank(): QuizQuestion[] {
 
     bank.push({
       id: `q-${example.id}-tempdew`,
-      prompt: `Which temperature/dewpoint pair is correct for ${metar.station}?`,
+      prompt: `In this METAR, which temperature/dewpoint pair for ${metar.station} is correct?`,
       metar,
+      metarRaw: example.rawText,
       difficulty: "hard",
       skillTag: "temperature",
       choices: buildChoices(`${metar.temperature.celsius}/${metar.temperature.dewpointCelsius}°C`, [`${metar.temperature.dewpointCelsius}/${metar.temperature.celsius}°C`, `${metar.temperature.celsius + 3}/${metar.temperature.dewpointCelsius}°C`, `${metar.temperature.celsius}/${metar.temperature.dewpointCelsius - 4}°C`]),
