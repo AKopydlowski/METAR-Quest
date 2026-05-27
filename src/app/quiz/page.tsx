@@ -18,14 +18,14 @@ export default function QuizPage() {
     setAnswered(true);
     if (isCorrect) setScore((s) => s + 1);
 
-    const existing = loadProgress("local-user");
+    const existing = loadProgress("local-user", "quiz");
     saveProgress({
       userId: "local-user",
       totalAnswered: (existing?.totalAnswered ?? 0) + 1,
       totalCorrect: (existing?.totalCorrect ?? 0) + (isCorrect ? 1 : 0),
       updatedAt: new Date().toISOString(),
       skills: existing?.skills ?? [],
-    });
+    }, "quiz");
   };
 
   const next = () => {

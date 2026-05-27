@@ -19,3 +19,5 @@ export interface ProgressSnapshot {
   answered: number;
   completedAt: string;
 }
+
+export type ProgressMode = "quiz" | "time-attack";
