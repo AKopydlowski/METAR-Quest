@@ -1,199 +1,86 @@
 # METAR Quest
 
-METAR Quest is an educational aviation weather app for learning how to decode METAR and TAF reports through interactive challenges, quizzes, time-based gameplay and real-world weather data.
+METAR Quest is an early-stage Next.js project intended to become an educational app for learning how to decode METAR/TAF reports.
 
-## Features
+## Current Status (What is actually implemented)
 
-- METAR decoding practice
-- TAF basics
-- Multiple-choice quiz mode
-- Time Attack mode
-- Real weather data by ICAO airport code
-- Local progress tracking
-- Learning statistics
-- Responsive interface
+The repository currently contains the default Next.js starter UI and foundational app shell only.
 
-## Game Modes
+### Delivered features
 
-## Learn
+- Next.js App Router project scaffold
+- Single landing page at `/`
+- Global layout, global styles, and font setup
+- Basic responsive starter interface
 
-A learning section explaining the main parts of METAR and TAF reports.
+### Implemented routes
 
-Topics:
+- `/` – starter home page
 
-- ICAO station code
-- Observation time
-- Wind
-- Visibility
-- Weather phenomena
-- Clouds
-- Temperature and dew point
-- QNH
-- TAF basics
+There are no METAR game modes, parser UI, API routes, or progress features implemented yet in this branch.
 
-## Decode
+## Tech Stack (currently in use)
 
-A mode where the user receives a METAR report and answers questions about its specific elements.
-
-Main assumptions:
-
-- Multiple-choice answers
-- Instant feedback
-- Short explanations after each answer
-- Score tracking
-- Progress saved locally
-
-## Quiz
-
-A classic quiz mode focused on aviation weather abbreviations and meanings.
-
-Main assumptions:
-
-- Randomized questions
-- One correct answer per question
-- Final result screen
-- Saved quiz statistics
-
-## Time Attack
-
-A time-based mode where the user answers as many questions as possible within a fixed time limit.
-
-Main assumptions:
-
-- 60-second timer
-- Score based on correct answers
-- Wrong answers do not end the game
-- Best score saved locally
-
-## Real Weather
-
-A mode for fetching real METAR or TAF reports using an ICAO airport code.
-
-Main assumptions:
-
-- ICAO input field
-- METAR and TAF selection
-- API route for external weather data
-- Loading and error states
-- Basic report parsing
-
-## Progress
-
-A section showing the user's learning progress.
-
-Tracked data:
-
-- Total answered questions
-- Correct answers
-- Accuracy percentage
-- Completed quiz sessions
-- Best Time Attack score
-- Last activity
-
-## Tech Stack
-
-- Next.js
-- React
+- Next.js 16
+- React 19
 - TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Zustand
-- React Hook Form
-- Zod
-- Recharts
-- LocalStorage
-- Next.js API Routes
+- Tailwind CSS 4
+- ESLint
 
+## Setup
 
-## Project Structure
-
-src/
-  app/
-    learn/
-    decode/
-    quiz/
-    time-attack/
-    real-weather/
-    progress/
-    api/
-
-  components/
-    layout/
-    metar/
-    quiz/
-    progress/
-
-  lib/
-    metar/
-    weather/
-    storage/
-
-  types/
-
-## METAR Parser Scope
-
-The parser is planned to recognize:
-
-- ICAO station code
-- Observation time
-- Wind
-- Visibility
-- Clouds
-- Temperature and dew point
-- QNH
-- Basic weather phenomena
-
-The parser is educational and focused on the most common METAR elements.
-
-## Installation
-
-Clone the repository:
-
+```bash
 git clone https://github.com/AKopydlowski/METAR-Quest.git
-
-Go to the project directory:
-
-cd metar-quest
-
-Install dependencies:
-
+cd METAR-Quest
 npm install
-
-Run the development server:
-
 npm run dev
+```
 
-Open the app in your browser:
+Open: `http://localhost:3000`
 
-http://localhost:3000
+## Scripts
 
-## Available Scripts
-
+```bash
 npm run dev
+```
+Start development server.
 
-Runs the app in development mode.
-
+```bash
 npm run build
+```
+Create production build.
 
-Builds the app for production.
-
+```bash
 npm run start
+```
+Run production server.
 
-Starts the production build.
-
+```bash
 npm run lint
+```
+Run ESLint checks.
 
-Runs linting.
+## Testing
+
+There is no full automated test suite configured yet.
+
+General quality check:
+
+```bash
+npm run lint
+```
+
+Parser test command (reserved for when parser tests are added):
+
+```bash
+npm run test:parser
+```
+
+> Note: `test:parser` is documented as the intended parser test command name, but this script is not implemented yet in `package.json`.
 
 ## Disclaimer
 
 METAR Quest is an educational project and should not be used for real-world flight planning or operational aviation decisions.
-
-## Author
-
-AKopydlowski
-
-GitHub: https://github.com/AKopydlowski
 
 ## License
 
