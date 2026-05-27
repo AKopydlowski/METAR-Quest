@@ -12,6 +12,10 @@ export default function TimeAttackPage() {
   const [timeLeft, setTimeLeft] = useState(60);
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [bestCombo, setBestCombo] = useState(0);
+  const [answered, setAnswered] = useState(0);
+  const [correct, setCorrect] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,7 +42,17 @@ export default function TimeAttackPage() {
     if (timeLeft <= 0 || selectedId) return;
 
     setSelectedId(choiceId);
-    if (isCorrect) setScore((s) => s + 1);
+    setAnswered((n) => n + 1);
+    if (isCorrect) {
+      const nextCombo = combo + 1;
+      const multiplier = nextCombo >= 10 ? 3 : nextCombo >= 5 ? 2 : 1;
+      setScore((s) => s + multiplier);
+      setCorrect((n) => n + 1);
+      setCombo(nextCombo);
+      setBestCombo((prev) => Math.max(prev, nextCombo));
+    } else {
+      setCombo(0);
+    }
 
     const existing = loadProgress("local-user", "time-attack");
     saveProgress(
@@ -58,19 +72,46 @@ export default function TimeAttackPage() {
     }, 450);
   };
 
+  const restartRound = () => {
+    setIndex(0);
+    setScore(0);
+    setCombo(0);
+    setBestCombo(0);
+    setAnswered(0);
+    setCorrect(0);
+    setSelectedId(null);
+    setTimeLeft(60);
+  };
+
+  const isFinished = timeLeft <= 0;
+  const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
+
   return (
     <main className="mx-auto w-full max-w-4xl p-6">
       <section className="rounded-2xl border border-sky-200/40 bg-gradient-to-br from-sky-500/15 via-indigo-500/10 to-transparent p-6 shadow-lg backdrop-blur">
         <h1 className="text-3xl font-bold tracking-tight">Time Attack</h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">Źródło pytań: {source === "live-api" ? "Live API (większa baza)" : "Lokalna baza"}</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border p-3"><p className="text-xs uppercase">Czas</p><p className="text-2xl font-semibold">{timeLeft}s</p></div>
+          <div className="rounded-xl border p-3"><p className="text-xs uppercase">Czas</p><p className="text-2xl font-semibold">{Math.max(0, timeLeft)}s</p></div>
           <div className="rounded-xl border p-3"><p className="text-xs uppercase">Wynik</p><p className="text-2xl font-semibold">{score}</p></div>
-          <div className="rounded-xl border p-3"><p className="text-xs uppercase">Pula pytań</p><p className="text-2xl font-semibold">{questions.length}</p></div>
+          <div className="rounded-xl border p-3"><p className="text-xs uppercase">Combo</p><p className="text-2xl font-semibold">{combo}🔥</p></div>
         </div>
       </section>
 
       <section className="mt-5 rounded-2xl border bg-white/80 p-6 shadow-md dark:bg-zinc-900/80">
+        {isFinished ? (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Koniec rundy</h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-300">Twój wynik: <span className="font-semibold">{score}</span> pkt</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border p-3"><p className="text-xs uppercase">Skuteczność</p><p className="text-xl font-semibold">{accuracy}%</p></div>
+              <div className="rounded-xl border p-3"><p className="text-xs uppercase">Najlepsze combo</p><p className="text-xl font-semibold">{bestCombo}</p></div>
+              <div className="rounded-xl border p-3"><p className="text-xs uppercase">Odpowiedzi</p><p className="text-xl font-semibold">{answered}</p></div>
+            </div>
+            <button onClick={restartRound} className="rounded-xl bg-sky-500 px-4 py-2 font-semibold text-slate-950 hover:bg-sky-400">Zagraj ponownie</button>
+          </div>
+        ) : (
+          <>
         <p className="text-lg font-medium">{q.prompt}</p>
         <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/60 p-3 dark:border-indigo-500/40 dark:bg-indigo-900/20">
           <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-200">METAR reference</p>
@@ -96,6 +137,8 @@ export default function TimeAttackPage() {
             </button>
           ))}
         </div>
+        </>
+        )}
       </section>
     </main>
   );
