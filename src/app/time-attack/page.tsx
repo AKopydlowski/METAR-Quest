@@ -7,7 +7,7 @@ import type { QuizQuestion } from "@/types/quiz";
 
 export default function TimeAttackPage() {
   const localQuestions = useMemo(() => buildQuestionBank(), []);
-  const [questions, setQuestions] = useState<QuizQuestion[]>(localQuestions);
+  const [questions, setQuestions] = useState<QuizQuestion[]>(localQuestions.slice(0, 10));
   const [source, setSource] = useState("local");
   const [timeLeft, setTimeLeft] = useState(60);
   const [index, setIndex] = useState(0);
@@ -72,6 +72,10 @@ export default function TimeAttackPage() {
 
       <section className="mt-5 rounded-2xl border bg-white/80 p-6 shadow-md dark:bg-zinc-900/80">
         <p className="text-lg font-medium">{q.prompt}</p>
+        <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/60 p-3 dark:border-indigo-500/40 dark:bg-indigo-900/20">
+          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-200">METAR reference</p>
+          <p className="mt-1 font-mono text-sm text-indigo-950 dark:text-indigo-100">{q.metarRaw}</p>
+        </div>
         <div className="mt-4 grid gap-2">
           {q.choices.map((choice) => (
             <button

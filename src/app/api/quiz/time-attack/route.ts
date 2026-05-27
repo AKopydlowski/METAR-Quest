@@ -8,6 +8,7 @@ const STATIONS = [
 ];
 
 const BASE_URL = "https://aviationweather.gov/api/data/metar";
+const TIME_ATTACK_POOL = 10;
 
 async function fetchRawMetars() {
   const ids = STATIONS.join(",");
@@ -32,10 +33,10 @@ export async function GET() {
       const parsed = parseMetar(raw);
       return { id: `${parsed.station.toLowerCase()}-${index}`, rawText: raw, metar: parsed };
     });
-    const questions = buildDynamicQuestionBank(entries);
+    const questions = buildDynamicQuestionBank(entries).slice(0, TIME_ATTACK_POOL);
     return NextResponse.json({ source: "live-api", count: questions.length, questions });
   } catch {
-    const fallback = buildQuestionBank();
+    const fallback = buildQuestionBank().slice(0, TIME_ATTACK_POOL);
     return NextResponse.json({ source: "fallback-local", count: fallback.length, questions: fallback });
   }
 }

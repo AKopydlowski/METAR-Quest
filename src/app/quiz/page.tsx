@@ -4,15 +4,38 @@ import { useMemo, useState } from "react";
 import { buildQuestionBank } from "@/lib/metar/questions";
 import { loadProgress, saveProgress } from "@/lib/storage/progressStorage";
 
+const QUIZ_LENGTH = 10;
+
+type DifficultyFilter = "all" | "easy" | "medium" | "hard";
+
 export default function QuizPage() {
-  const questions = useMemo(() => buildQuestionBank(), []);
+  const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>("all");
+  const allQuestions = useMemo(() => buildQuestionBank(), []);
+  const filtered = useMemo(
+    () =>
+      allQuestions.filter((q) =>
+        difficultyFilter === "all" ? true : q.difficulty === difficultyFilter,
+      ),
+    [allQuestions, difficultyFilter],
+  );
+  const questions = useMemo(() => filtered.slice(0, QUIZ_LENGTH), [filtered]);
   const [current, setCurrent] = useState(0);
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const [showResult, setShowResult] = useState(false);
+
   const q = questions[current];
-  const progress = ((current + 1) / questions.length) * 100;
+  const progress = questions.length ? ((current + 1) / questions.length) * 100 : 0;
+
+  const resetSession = () => {
+    setCurrent(0);
+    setScore(0);
+    setAnswered(false);
+    setSelectedId(null);
+    setShowResult(false);
+  };
 
   const onAnswer = (isCorrect: boolean) => {
     if (answered) return;
@@ -33,10 +56,25 @@ export default function QuizPage() {
   };
 
   const next = () => {
+    if (current >= questions.length - 1) {
+      setShowResult(true);
+      return;
+    }
     setAnswered(false);
     setSelectedId(null);
-    setCurrent((c) => (c + 1) % questions.length);
+    setCurrent((c) => c + 1);
   };
+
+  if (!questions.length) {
+    return (
+      <main className="relative min-h-screen overflow-hidden bg-slate-950 px-4 py-8 text-slate-100 sm:px-8">
+        <section className="relative mx-auto w-full max-w-2xl rounded-3xl border border-sky-200/20 bg-slate-900/70 p-6 shadow-2xl backdrop-blur sm:p-8">
+          <h1 className="text-2xl font-bold text-white">METAR Quiz</h1>
+          <p className="mt-3 text-slate-300">Brak pytań dla wybranego poziomu. Zmień filtr trudności.</p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950 px-4 py-8 text-slate-100 sm:px-8">
@@ -50,6 +88,20 @@ export default function QuizPage() {
           <span className="rounded-full border border-sky-300/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-sky-200">
             {q.difficulty}
           </span>
+        </div>
+        <div className="mb-4 flex flex-wrap gap-2">
+          {(["all", "easy", "medium", "hard"] as const).map((level) => (
+            <button
+              key={level}
+              onClick={() => {
+                setDifficultyFilter(level);
+                resetSession();
+              }}
+              className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${difficultyFilter === level ? "bg-cyan-400 text-slate-900" : "bg-slate-800 text-slate-200"}`}
+            >
+              {level === "all" ? "Wszystkie" : level}
+            </button>
+          ))}
         </div>
 
         <div className="mb-5 h-2 overflow-hidden rounded-full bg-slate-700/70">
@@ -95,11 +147,22 @@ export default function QuizPage() {
 
         <button
           onClick={next}
+          disabled={!answered}
           className="mt-7 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-400 px-6 py-2.5 font-semibold text-slate-950 transition hover:scale-[1.02] hover:shadow-lg hover:shadow-cyan-500/30"
         >
-          Next Question
+          {current >= questions.length - 1 ? "Zakończ quiz" : "Następne pytanie"}
         </button>
       </section>
+
+      {showResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-cyan-300/40 bg-slate-900 p-6 text-center shadow-2xl">
+            <h2 className="text-2xl font-bold text-white">Wynik quizu</h2>
+            <p className="mt-2 text-slate-200">{score} / {questions.length} poprawnych odpowiedzi</p>
+            <button onClick={resetSession} className="mt-5 rounded-lg bg-cyan-400 px-4 py-2 font-semibold text-slate-950">Zagraj ponownie</button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
