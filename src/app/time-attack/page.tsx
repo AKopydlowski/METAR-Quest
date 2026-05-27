@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { loadProgress, saveProgress } from "@/lib/storage/progressStorage";
 import { buildQuestionBank } from "@/lib/metar/questions";
 import type { QuizQuestion } from "@/types/quiz";
+import { useLanguage } from "@/components/layout/LanguageProvider";
 
 export default function TimeAttackPage() {
+  const { t } = useLanguage();
   const localQuestions = useMemo(() => buildQuestionBank(), []);
   const [questions, setQuestions] = useState<QuizQuestion[]>(localQuestions.slice(0, 10));
   const [source, setSource] = useState("local");
@@ -90,10 +92,10 @@ export default function TimeAttackPage() {
     <main className="mx-auto w-full max-w-4xl p-6">
       <section className="rounded-2xl border border-sky-200/40 bg-gradient-to-br from-sky-500/15 via-indigo-500/10 to-transparent p-6 shadow-lg backdrop-blur">
         <h1 className="text-3xl font-bold tracking-tight">Time Attack</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">Źródło pytań: {source === "live-api" ? "Live API (większa baza)" : "Lokalna baza"}</p>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{t("questionSource")}: {source === "live-api" ? t("liveApi") : t("localDb")}</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border p-3"><p className="text-xs uppercase">Czas</p><p className="text-2xl font-semibold">{Math.max(0, timeLeft)}s</p></div>
-          <div className="rounded-xl border p-3"><p className="text-xs uppercase">Wynik</p><p className="text-2xl font-semibold">{score}</p></div>
+          <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("time")}</p><p className="text-2xl font-semibold">{Math.max(0, timeLeft)}s</p></div>
+          <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("score")}</p><p className="text-2xl font-semibold">{score}</p></div>
           <div className="rounded-xl border p-3"><p className="text-xs uppercase">Combo</p><p className="text-2xl font-semibold">{combo}🔥</p></div>
         </div>
       </section>
@@ -101,14 +103,14 @@ export default function TimeAttackPage() {
       <section className="mt-5 rounded-2xl border bg-white/80 p-6 shadow-md dark:bg-zinc-900/80">
         {isFinished ? (
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Koniec rundy</h2>
-            <p className="text-sm text-zinc-600 dark:text-zinc-300">Twój wynik: <span className="font-semibold">{score}</span> pkt</p>
+            <h2 className="text-2xl font-bold">{t("endOfRound")}</h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-300">{t("score")}: <span className="font-semibold">{score}</span> pkt</p>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border p-3"><p className="text-xs uppercase">Skuteczność</p><p className="text-xl font-semibold">{accuracy}%</p></div>
-              <div className="rounded-xl border p-3"><p className="text-xs uppercase">Najlepsze combo</p><p className="text-xl font-semibold">{bestCombo}</p></div>
-              <div className="rounded-xl border p-3"><p className="text-xs uppercase">Odpowiedzi</p><p className="text-xl font-semibold">{answered}</p></div>
+              <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("accuracy")}</p><p className="text-xl font-semibold">{accuracy}%</p></div>
+              <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("bestCombo")}</p><p className="text-xl font-semibold">{bestCombo}</p></div>
+              <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("answers")}</p><p className="text-xl font-semibold">{answered}</p></div>
             </div>
-            <button onClick={restartRound} className="rounded-xl bg-sky-500 px-4 py-2 font-semibold text-slate-950 hover:bg-sky-400">Zagraj ponownie</button>
+            <button onClick={restartRound} className="rounded-xl bg-sky-500 px-4 py-2 font-semibold text-slate-950 hover:bg-sky-400">{t("playAgain")}</button>
           </div>
         ) : (
           <>
