@@ -15,11 +15,12 @@ interface ApiResponse {
 }
 
 export default function RealWeatherPage() {
-  const [station, setStation] = useState("KSEA");
+  const [station, setStation] = useState("");
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   const loadWeather = async () => {
+    if (!station.trim()) return;
     setLoading(true);
     const response = await fetch(`/api/weather/metar?station=${encodeURIComponent(station)}`);
     const payload = (await response.json()) as ApiResponse;
@@ -32,10 +33,15 @@ export default function RealWeatherPage() {
       <h1 className="text-2xl font-semibold">Real Weather</h1>
       <p className="mt-2 text-sm text-zinc-500">Live METAR (AviationWeather.gov API)</p>
       <div className="mt-4 flex gap-2">
-        <input value={station} onChange={(e) => setStation(e.target.value.toUpperCase())} className="rounded border px-3 py-2 text-black" placeholder="ICAO, np. KJFK" />
-        <button onClick={loadWeather} className="rounded bg-sky-500 px-4 py-2 text-white">{loading ? "Loading..." : "Load"}</button>
+        <input
+          value={station}
+          onChange={(e) => setStation(e.target.value.toUpperCase())}
+          className="w-full rounded border border-zinc-400 bg-white px-3 py-2 text-zinc-900 placeholder:text-zinc-500 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-400"
+          placeholder="ICAO, np. KEPPO"
+        />
+        <button onClick={loadWeather} className="rounded bg-sky-500 px-4 py-2 text-white disabled:opacity-50" disabled={loading || !station.trim()}>{loading ? "Loading..." : "Load"}</button>
       </div>
-      <div className="mt-4 rounded border p-4">
+      <div className="mt-4 rounded border border-zinc-300 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900/60">
         {!data && <p>No weather loaded yet.</p>}
         {data?.error && <p className="text-rose-500">{data.error}</p>}
         {data?.metar && (
