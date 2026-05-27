@@ -24,6 +24,7 @@ export default function Home() {
             </Link>
           </div>
         </section>
+        <section className="rounded-2xl border border-amber-300/30 bg-amber-500/10 p-4 text-sm text-amber-100">Nowość: Daily Challenge, tryb Endless, streak/combo, podpowiedzi, lokalny leaderboard i osiągnięcia w zakładce Progress.</section>
         <section className="grid gap-4 sm:grid-cols-2">
           <Link href="/learn" className="rounded-2xl border border-slate-700/80 bg-slate-900/70 p-6 hover:border-sky-400/40">
             <h3 className="text-xl font-semibold text-white">{t("learnTitle")}</h3>
