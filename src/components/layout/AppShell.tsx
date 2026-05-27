@@ -8,7 +8,8 @@ import { loadSettings } from "@/lib/storage/gameStorage";
 export default function AppShell({ children }: Readonly<{ children: React.ReactNode }>) {
   useEffect(() => {
     const settings = loadSettings();
-    document.body.classList.toggle("dark", settings.theme === "dark");
+    const root = document.documentElement;
+    root.classList.toggle("dark", settings.theme === "dark");
     document.body.classList.toggle("text-lg", settings.fontScale === "large");
     document.body.classList.toggle("contrast-125", settings.highContrast);
   }, []);
