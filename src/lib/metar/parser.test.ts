@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  parseClouds,
+  parseAltimeter,
+  parseCloud,
   parseMetar,
-  parsePressure,
   parseTemperature,
   parseVisibility,
   parseWind,
@@ -14,66 +14,73 @@ test('parseWind: valid token', () => {
 });
 
 test('parseWind: invalid token', () => {
-  assert.equal(parseWind('VRB03KT'), null);
+  assert.equal(parseWind('BADWIND'), undefined);
 });
 
 test('parseVisibility: valid token', () => {
-  assert.deepEqual(parseVisibility('9999'), { meters: 9999 });
+  assert.deepEqual(parseVisibility('9999'), { statuteMiles: 6.2, raw: '9999' });
 });
 
 test('parseVisibility: invalid token', () => {
-  assert.equal(parseVisibility('10SM'), null);
+  assert.equal(parseVisibility('XXXX'), undefined);
 });
 
-test('parseClouds: valid token', () => {
-  assert.deepEqual(parseClouds('FEW030'), { coverage: 'FEW', heightFt: 3000 });
+test('parseCloud: valid token', () => {
+  assert.deepEqual(parseCloud('FEW030'), {
+    coverage: 'FEW',
+    baseFtAgl: 3000,
+    cloudType: undefined,
+  });
 });
 
-test('parseClouds: invalid token', () => {
-  assert.equal(parseClouds('CLR'), null);
+test('parseCloud: invalid token', () => {
+  assert.equal(parseCloud('BAD'), undefined);
 });
 
 test('parseTemperature: valid token', () => {
-  assert.deepEqual(parseTemperature('18/10'), { temperatureC: 18, dewPointC: 10 });
+  assert.deepEqual(parseTemperature('18/10'), { celsius: 18, dewpointCelsius: 10 });
 });
 
 test('parseTemperature: negative values', () => {
-  assert.deepEqual(parseTemperature('M02/M05'), { temperatureC: -2, dewPointC: -5 });
+  assert.deepEqual(parseTemperature('M02/M05'), { celsius: -2, dewpointCelsius: -5 });
 });
 
 test('parseTemperature: invalid token', () => {
-  assert.equal(parseTemperature('18//10'), null);
+  assert.equal(parseTemperature('18//10'), undefined);
 });
 
-test('parsePressure: valid token', () => {
-  assert.deepEqual(parsePressure('Q1015'), { qnhHpa: 1015 });
+test('parseAltimeter: valid token', () => {
+  assert.deepEqual(parseAltimeter('Q1015'), { hectopascals: 1015, inchesHg: 29.97 });
 });
 
-test('parsePressure: invalid token', () => {
-  assert.equal(parsePressure('A2992'), null);
+test('parseAltimeter: invalid token', () => {
+  assert.equal(parseAltimeter('Q10'), undefined);
 });
 
 test('parseMetar: parses common fixture', () => {
   const fixture = 'EPWA 261200Z 27012KT 9999 FEW030 18/10 Q1015';
-  assert.deepEqual(parseMetar(fixture), {
-    station: 'EPWA',
-    observationTime: '261200Z',
-    wind: { direction: 270, speedKt: 12 },
-    visibility: { meters: 9999 },
-    clouds: [{ coverage: 'FEW', heightFt: 3000 }],
-    temperature: { temperatureC: 18, dewPointC: 10 },
-    pressure: { qnhHpa: 1015 },
-  });
+  const parsed = parseMetar(fixture);
+  assert.equal(parsed.station, 'EPWA');
+  assert.equal(parsed.observedAt, '261200Z');
+  assert.equal(parsed.rawText, fixture);
+  assert.deepEqual(parsed.wind, { direction: 270, speedKt: 12, gustKt: undefined });
+  assert.deepEqual(parsed.visibility, { statuteMiles: 6.2, raw: '9999' });
+  assert.deepEqual(parsed.clouds, [
+    { coverage: 'FEW', baseFtAgl: 3000, cloudType: undefined },
+  ]);
+  assert.deepEqual(parsed.temperature, { celsius: 18, dewpointCelsius: 10 });
+  assert.deepEqual(parsed.altimeter, { hectopascals: 1015, inchesHg: 29.97 });
+  assert.deepEqual(parsed.weatherCodes, []);
+  assert.equal(parsed.flightCategory, 'VFR');
 });
 
 test('parseMetar: invalid groups resolve to null/empty', () => {
-  assert.deepEqual(parseMetar('EPWA 261200Z BADWIND XXXX CLR XX/YY Q10'), {
-    station: 'EPWA',
-    observationTime: '261200Z',
-    wind: null,
-    visibility: null,
-    clouds: [],
-    temperature: null,
-    pressure: null,
-  });
+  const parsed = parseMetar('EPWA 261200Z BADW1ND 12XX XXX0 XX/YY Q10');
+  assert.equal(parsed.station, 'EPWA');
+  assert.equal(parsed.observedAt, '261200Z');
+  assert.equal(parsed.wind, undefined);
+  assert.equal(parsed.visibility, undefined);
+  assert.deepEqual(parsed.clouds, []);
+  assert.equal(parsed.temperature, undefined);
+  assert.equal(parsed.altimeter, undefined);
 });

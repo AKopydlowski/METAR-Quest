@@ -1,76 +1,142 @@
-export type Wind = { direction: number; speedKt: number };
-export type Visibility = { meters: number };
-export type CloudLayer = { coverage: string; heightFt: number | null };
-export type Temperature = { temperatureC: number; dewPointC: number };
-export type Pressure = { qnhHpa: number };
+import type {
+  FlightCategory,
+  MetarAltimeter,
+  MetarCloudLayer,
+  MetarTemperature,
+  MetarVisibility,
+  MetarWind,
+  ParsedMetar,
+} from "@/types/metar";
 
-export type ParsedMetar = {
-  station: string | null;
-  observationTime: string | null;
-  wind: Wind | null;
-  visibility: Visibility | null;
-  clouds: CloudLayer[];
-  temperature: Temperature | null;
-  pressure: Pressure | null;
-};
+const CLOUD_RE = /^(SKC|CLR|FEW|SCT|BKN|OVC|VV)(\d{3}|\/\/\/)?(CB|TCU)?$/;
+const OBS_TIME_RE = /^\d{6}Z$/;
 
-export const parseWind = (token: string): Wind | null => {
-  const m = token.match(/^(\d{3})(\d{2})KT$/);
-  if (!m) return null;
-  return { direction: Number(m[1]), speedKt: Number(m[2]) };
-};
+export function parseMetar(rawText: string): ParsedMetar {
+  const tokens = rawText.trim().split(/\s+/);
+  const station = tokens[0] ?? "XXXX";
+  const observedAt = OBS_TIME_RE.test(tokens[1] ?? "") ? tokens[1] : undefined;
 
-export const parseVisibility = (token: string): Visibility | null => {
-  if (!/^\d{4}$/.test(token)) return null;
-  return { meters: Number(token) };
-};
+  const wind = tokens.map(parseWind).find(Boolean) as MetarWind | undefined;
+  const visibility = tokens.map(parseVisibility).find(Boolean) as MetarVisibility | undefined;
+  const clouds = tokens.map(parseCloud).filter(Boolean) as MetarCloudLayer[];
+  const temperature = tokens.map(parseTemperature).find(Boolean) as MetarTemperature | undefined;
+  const altimeter = tokens.map(parseAltimeter).find(Boolean) as MetarAltimeter | undefined;
 
-export const parseClouds = (token: string): CloudLayer | null => {
-  const m = token.match(/^(FEW|SCT|BKN|OVC)(\d{3}|\/\/\/)$/);
-  if (!m) return null;
+  const weatherCodes = tokens.filter(
+    (token) =>
+      token !== station &&
+      !OBS_TIME_RE.test(token) &&
+      /^[-+]?([A-Z]{2,})$/.test(token),
+  );
+
   return {
-    coverage: m[1],
-    heightFt: m[2] === '///' ? null : Number(m[2]) * 100,
+    station,
+    observedAt,
+    rawText,
+    wind,
+    visibility,
+    clouds,
+    weatherCodes,
+    temperature,
+    altimeter,
+    flightCategory: deriveFlightCategory(visibility, clouds),
   };
-};
+}
 
-const parseSignedTemp = (part: string): number | null => {
-  const m = part.match(/^(M)?(\d{2})$/);
-  if (!m) return null;
-  const value = Number(m[2]);
-  return m[1] ? -value : value;
-};
+export function deriveFlightCategory(
+  visibility?: MetarVisibility,
+  clouds: MetarCloudLayer[] = [],
+): FlightCategory {
+  const vis = visibility?.statuteMiles ?? 10;
+  const ceiling = getCeiling(clouds);
 
-export const parseTemperature = (token: string): Temperature | null => {
-  const m = token.match(/^([M]?\d{2})\/([M]?\d{2})$/);
-  if (!m) return null;
-  const temperatureC = parseSignedTemp(m[1]);
-  const dewPointC = parseSignedTemp(m[2]);
-  if (temperatureC === null || dewPointC === null) return null;
-  return { temperatureC, dewPointC };
-};
+  if (vis < 1 || ceiling < 500) return "LIFR";
+  if (vis < 3 || ceiling < 1000) return "IFR";
+  if (vis <= 5 || ceiling <= 3000) return "MVFR";
+  return "VFR";
+}
 
-export const parsePressure = (token: string): Pressure | null => {
-  const m = token.match(/^Q(\d{4})$/);
-  if (!m) return null;
-  return { qnhHpa: Number(m[1]) };
-};
+export function parseWind(token: string): MetarWind | undefined {
+  const match = token.match(/^(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?KT$/);
+  if (!match) return undefined;
+  return {
+    direction: match[1] === "VRB" ? null : Number(match[1]),
+    speedKt: Number(match[2]),
+    gustKt: match[4] ? Number(match[4]) : undefined,
+  };
+}
 
-export const parseMetar = (metar: string): ParsedMetar => {
-  const tokens = metar.trim().split(/\s+/);
-  const station = /^[A-Z]{4}$/.test(tokens[0] ?? '') ? tokens[0] : null;
-  const observationTime = /^\d{6}Z$/.test(tokens[1] ?? '') ? tokens[1] : null;
+export function parseVisibility(token: string): MetarVisibility | undefined {
+  if (/^\d{4}$/.test(token)) {
+    const meters = Number(token);
+    return {
+      statuteMiles: meters === 9999 ? 6.2 : Number((meters / 1609.34).toFixed(2)),
+      raw: token,
+    };
+  }
 
-  const wind = tokens.map(parseWind).find((x): x is Wind => x !== null) ?? null;
-  const visibility =
-    tokens.map(parseVisibility).find((x): x is Visibility => x !== null) ?? null;
-  const clouds = tokens
-    .map(parseClouds)
-    .filter((x): x is CloudLayer => x !== null);
-  const temperature =
-    tokens.map(parseTemperature).find((x): x is Temperature => x !== null) ?? null;
-  const pressure =
-    tokens.map(parsePressure).find((x): x is Pressure => x !== null) ?? null;
+  if (/^\d{1,2}SM$/.test(token)) {
+    return { statuteMiles: Number(token.replace("SM", "")), raw: token };
+  }
 
-  return { station, observationTime, wind, visibility, clouds, temperature, pressure };
-};
+  const fraction = token.match(/^(\d)\/(\d)SM$/);
+  if (fraction) {
+    return {
+      statuteMiles: Number(fraction[1]) / Number(fraction[2]),
+      raw: token,
+    };
+  }
+
+  return undefined;
+}
+
+export function parseCloud(token: string): MetarCloudLayer | undefined {
+  const match = token.match(CLOUD_RE);
+  if (!match) return undefined;
+
+  return {
+    coverage: match[1] as MetarCloudLayer["coverage"],
+    baseFtAgl: match[2] && match[2] !== "///" ? Number(match[2]) * 100 : undefined,
+    cloudType: match[3] as MetarCloudLayer["cloudType"],
+  };
+}
+
+export function parseTemperature(token: string): MetarTemperature | undefined {
+  const match = token.match(/^(M?\d{2})\/(M?\d{2})$/);
+  if (!match) return undefined;
+
+  return {
+    celsius: parseSignedTemp(match[1]),
+    dewpointCelsius: parseSignedTemp(match[2]),
+  };
+}
+
+export function parseAltimeter(token: string): MetarAltimeter | undefined {
+  const usMatch = token.match(/^A(\d{4})$/);
+  if (usMatch) {
+    return { inchesHg: Number(usMatch[1]) / 100 };
+  }
+
+  const intlMatch = token.match(/^Q(\d{4})$/);
+  if (intlMatch) {
+    const hectopascals = Number(intlMatch[1]);
+    return {
+      hectopascals,
+      inchesHg: Number((hectopascals * 0.02953).toFixed(2)),
+    };
+  }
+
+  return undefined;
+}
+
+function parseSignedTemp(token: string): number {
+  return token.startsWith("M") ? -Number(token.slice(1)) : Number(token);
+}
+
+function getCeiling(clouds: MetarCloudLayer[]): number {
+  const ceilingLayer = clouds
+    .filter((layer) => ["BKN", "OVC", "VV"].includes(layer.coverage) && layer.baseFtAgl)
+    .sort((a, b) => (a.baseFtAgl ?? Infinity) - (b.baseFtAgl ?? Infinity))[0];
+
+  return ceilingLayer?.baseFtAgl ?? 100000;
+}
