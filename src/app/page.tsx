@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const modes = [
   {
     title: "Quick Decode",
@@ -48,18 +50,18 @@ export default function Home() {
             and scenario-based repetition.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <a
+            <Link
               href="/decode"
               className="inline-flex items-center justify-center rounded-xl bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
             >
               Start Decoding
-            </a>
-            <a
+            </Link>
+            <Link
               href="/quiz"
               className="inline-flex items-center justify-center rounded-xl border border-slate-600 bg-slate-900/70 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-sky-300 hover:text-sky-200"
             >
               Take a Quiz
-            </a>
+            </Link>
           </div>
         </section>
 
