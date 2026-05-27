@@ -1,86 +1,124 @@
 # METAR Quest
 
-METAR Quest is an early-stage Next.js project intended to become an educational app for learning how to decode METAR/TAF reports.
+METAR Quest is an educational aviation weather app for learning how to decode METAR and TAF reports through interactive challenges, quizzes, time-based gameplay and real-world weather data.
 
-## Current Status (What is actually implemented)
+## Features
 
-The repository currently contains the default Next.js starter UI and foundational app shell only.
+- METAR decoding practice
+- TAF basics
+- Multiple-choice quiz mode
+- Time Attack mode
+- Real weather data by ICAO airport code
+- Local progress tracking
+- Learning statistics
+- Responsive interface
 
-### Delivered features
+## Game Modes
 
-- Next.js App Router project scaffold
-- Single landing page at `/`
-- Global layout, global styles, and font setup
-- Basic responsive starter interface
+## Learn
 
-### Implemented routes
+A learning section explaining the main parts of METAR and TAF reports.
 
-- `/` – starter home page
+Topics:
 
-There are no METAR game modes, parser UI, API routes, or progress features implemented yet in this branch.
+- ICAO station code
+- Observation time
+- Wind
+- Visibility
+- Weather phenomena
+- Clouds
+- Temperature and dew point
+- QNH
+- TAF basics
 
-## Tech Stack (currently in use)
+## Decode
 
-- Next.js 16
-- React 19
+A mode where the user receives a METAR report and answers questions about its specific elements.
+
+Main assumptions:
+
+- Multiple-choice answers
+- Instant feedback
+- Short explanations after each answer
+- Score tracking
+- Progress saved locally
+
+## Quiz
+
+A classic quiz mode focused on aviation weather abbreviations and meanings.
+
+Main assumptions:
+
+- Randomized questions
+- One correct answer per question
+- Final result screen
+- Saved quiz statistics
+
+## Time Attack
+
+A time-based mode where the user answers as many questions as possible within a fixed time limit.
+
+Main assumptions:
+
+- 60-second timer
+- Score based on correct answers
+- Wrong answers do not end the game
+- Best score saved locally
+
+## Real Weather
+
+A mode for fetching real METAR or TAF reports using an ICAO airport code.
+
+Main assumptions:
+
+- ICAO input field
+- METAR and TAF selection
+- API route for external weather data
+- Loading and error states
+- Basic report parsing
+
+## Progress
+
+A section showing the user's learning progress.
+
+Tracked data:
+
+- Total answered questions
+- Correct answers
+- Accuracy percentage
+- Completed quiz sessions
+- Best Time Attack score
+- Last activity
+
+## Tech Stack
+
+- Next.js
+- React
 - TypeScript
-- Tailwind CSS 4
-- ESLint
+- Tailwind CSS
+- shadcn/ui
+- Zustand
+- React Hook Form
+- Zod
+- Recharts
+- LocalStorage
+- Next.js API Routes
 
-## Setup
+## Project Goals
 
-```bash
-git clone https://github.com/AKopydlowski/METAR-Quest.git
-cd METAR-Quest
-npm install
-npm run dev
-```
+The goal of this project is to create a clean and practical portfolio app focused on aviation weather learning.
 
-Open: `http://localhost:3000`
 
-## Scripts
-
-```bash
-npm run dev
-```
-Start development server.
-
-```bash
-npm run build
-```
-Create production build.
-
-```bash
-npm run start
-```
-Run production server.
-
-```bash
-npm run lint
-```
-Run ESLint checks.
-
-## Testing
-
-There is no full automated test suite configured yet.
-
-General quality check:
-
-```bash
-npm run lint
-```
-
-Parser test command (reserved for when parser tests are added):
-
-```bash
-npm run test:parser
-```
-
-> Note: `test:parser` is documented as the intended parser test command name, but this script is not implemented yet in `package.json`.
 
 ## Disclaimer
 
 METAR Quest is an educational project and should not be used for real-world flight planning or operational aviation decisions.
+
+## Author
+
+AKopydlowski
+
+GitHub: https://github.com/AKopydlowski
 
 ## License
 
