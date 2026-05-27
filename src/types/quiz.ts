@@ -13,6 +13,7 @@ export interface QuizQuestion {
   id: string;
   prompt: string;
   metar: ParsedMetar;
+  metarRaw: string;
   choices: QuizChoice[];
   difficulty: QuestionDifficulty;
   skillTag:
