@@ -2,10 +2,15 @@ import type { QuizChoice, QuizQuestion } from "@/types/quiz";
 import { metarExamples } from "./examples";
 
 function buildChoices(correct: string, incorrect: string[]): QuizChoice[] {
-  return [
-    { id: `c-${correct}`, label: correct, isCorrect: true },
-    ...incorrect.map((label) => ({ id: `c-${label}`, label, isCorrect: false })),
-  ];
+  const deduped = [correct, ...incorrect].filter(
+    (label, index, arr) => arr.indexOf(label) === index,
+  );
+
+  return deduped.map((label) => ({
+    id: `c-${correct}-${label}`,
+    label,
+    isCorrect: label === correct,
+  }));
 }
 
 export function buildQuestionBank(): QuizQuestion[] {
