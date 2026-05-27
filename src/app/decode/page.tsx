@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { parseMetar } from "@/lib/metar/parser";
 
 export default function DecodePage() {
   const [raw, setRaw] = useState("");
+  const parsed = raw.trim() ? parseMetar(raw.trim()) : null;
 
   return (
     <main className="mx-auto w-full max-w-3xl p-6">
@@ -24,9 +26,19 @@ export default function DecodePage() {
           Empty state: add a METAR to start decoding.
         </p>
       ) : (
-        <pre className="mt-3 rounded-md bg-zinc-100 p-3 text-sm dark:bg-zinc-800">
-          {raw.trim()}
-        </pre>
+        <div className="mt-4 space-y-3">
+          <pre className="rounded-md bg-zinc-100 p-3 text-sm dark:bg-zinc-800">{raw.trim()}</pre>
+          {parsed && (
+            <div className="rounded-md border border-zinc-300 p-3 text-sm dark:border-zinc-700">
+              <p><strong>Station:</strong> {parsed.station}</p>
+              <p><strong>Observed:</strong> {parsed.observedAt ?? "Unknown"}</p>
+              <p><strong>Wind:</strong> {parsed.wind ? `${parsed.wind.direction ?? "VRB"}° ${parsed.wind.speedKt}KT${parsed.wind.gustKt ? ` G${parsed.wind.gustKt}` : ""}` : "Unknown"}</p>
+              <p><strong>Visibility:</strong> {parsed.visibility ? `${parsed.visibility.statuteMiles} SM (${parsed.visibility.raw})` : "Unknown"}</p>
+              <p><strong>Ceiling/Clouds:</strong> {parsed.clouds.length ? parsed.clouds.map((c) => `${c.coverage}${c.baseFtAgl ? ` ${c.baseFtAgl}ft` : ""}`).join(", ") : "None reported"}</p>
+              <p><strong>Flight category:</strong> {parsed.flightCategory}</p>
+            </div>
+          )}
+        </div>
       )}
     </main>
   );
