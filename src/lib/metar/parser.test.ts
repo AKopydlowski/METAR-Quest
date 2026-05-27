@@ -10,7 +10,7 @@ import {
 } from './parser.ts';
 
 test('parseWind: valid token', () => {
-  assert.deepEqual(parseWind('27012KT'), { direction: 270, speedKt: 12 });
+  assert.deepEqual(parseWind('27012KT'), { direction: 270, speedKt: 12, gustKt: undefined });
 });
 
 test('parseWind: invalid token', () => {
