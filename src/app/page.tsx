@@ -3,50 +3,78 @@
 import Link from "next/link";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 
+const WOW_POINTS = [
+  { key: "mission", color: "cyan", pl: "Live Mission Mode z decyzją GO / CAUTION / NO-GO", en: "Live Mission Mode with GO / CAUTION / NO-GO calls" },
+  { key: "cockpit", color: "emerald", pl: "Kokpitowy briefing: wiatr, chmury, widzialność i ryzyko", en: "Cockpit briefing: wind, clouds, visibility and risk" },
+  { key: "coach", color: "violet", pl: "Profil pilota, rangi, słabe obszary i plan treningu", en: "Pilot profile, ranks, weak areas and training plan" },
+];
+
 export default function Home() {
   const { t, language } = useLanguage();
+  const pl = language === "pl";
 
   return (
-    <div className="min-h-screen">
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-12 sm:px-10 lg:px-16">
-        <section className="rounded-3xl border border-sky-300/25 bg-[linear-gradient(150deg,rgba(15,23,42,0.95),rgba(30,41,59,0.9),rgba(30,64,175,0.55))] p-8 shadow-2xl shadow-sky-950/40 sm:p-12">
-          <p className="mb-4 inline-flex rounded-full border border-sky-300/30 bg-sky-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">
-            {t("appName")}
-          </p>
-          <h1 className="max-w-3xl text-4xl font-bold leading-tight text-white sm:text-5xl">{t("heroTitle")}</h1>
-          <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">{t("heroDesc")}</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/decode" className="inline-flex items-center justify-center rounded-xl bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300">
-              {t("startDecoding")}
-            </Link>
-            <Link href="/quiz" className="inline-flex items-center justify-center rounded-xl border border-slate-600 bg-slate-900/70 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-sky-300 hover:text-sky-200">
-              {t("takeQuiz")}
-            </Link>
+    <div className="w-full">
+      <main className="flex w-full flex-col gap-10 py-4">
+        <section className="relative overflow-hidden rounded-[2.5rem] border border-sky-300/25 bg-[linear-gradient(135deg,rgba(2,6,23,0.98),rgba(15,23,42,0.94),rgba(14,165,233,0.36),rgba(79,70,229,0.35))] p-8 shadow-2xl shadow-sky-950/40 sm:p-12">
+          <div className="absolute right-[-8rem] top-[-8rem] h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl" />
+          <div className="absolute bottom-[-10rem] left-[-10rem] h-96 w-96 rounded-full bg-indigo-500/20 blur-3xl" />
+          <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <p className="mb-4 inline-flex rounded-full border border-sky-300/30 bg-sky-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100">
+                {t("appName")} • {pl ? "symulator decyzji pogodowych" : "weather decision simulator"}
+              </p>
+              <h1 className="max-w-4xl text-4xl font-black leading-tight text-white sm:text-6xl">
+                {pl ? "Dekoduj METAR jak pilot, podejmuj decyzje jak instruktor." : "Decode METAR like a pilot, make decisions like an instructor."}
+              </h1>
+              <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+                {pl ? "METAR Quest łączy quiz, live weather, kokpitowy briefing i misje GO/NO-GO, żeby nauka wyglądała jak prawdziwy briefing przed lotem." : "METAR Quest blends quiz training, live weather, cockpit briefing and GO/NO-GO missions so learning feels like a real preflight briefing."}
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link href="/missions" className="inline-flex items-center justify-center rounded-xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
+                  {pl ? "Uruchom Live Mission" : "Launch Live Mission"}
+                </Link>
+                <Link href="/decode" className="inline-flex items-center justify-center rounded-xl border border-slate-500 bg-slate-900/70 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-sky-300 hover:text-sky-200">
+                  {t("startDecoding")}
+                </Link>
+              </div>
+            </div>
+            <div className="rounded-[2rem] border border-white/10 bg-slate-950/60 p-5 text-white backdrop-blur">
+              <div className="rounded-3xl bg-gradient-to-br from-emerald-300 to-cyan-300 p-5 text-slate-950">
+                <p className="text-xs font-black uppercase tracking-[0.25em] opacity-70">{pl ? "Aktualny status" : "Current status"}</p>
+                <p className="mt-3 text-6xl font-black">VFR</p>
+                <p className="mt-2 text-sm font-bold">{pl ? "GO, ale sprawdź wiatr i QNH" : "GO, but verify wind and QNH"}</p>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-3 text-center text-xs">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3"><p className="text-slate-400">Wind</p><p className="mt-1 font-mono font-bold">28014KT</p></div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3"><p className="text-slate-400">VIS</p><p className="mt-1 font-mono font-bold">10SM</p></div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3"><p className="text-slate-400">Cloud</p><p className="mt-1 font-mono font-bold">FEW015</p></div>
+              </div>
+            </div>
           </div>
         </section>
-        <section className="grid gap-4 rounded-2xl border border-indigo-300/20 bg-[var(--surface)]/80 p-5 sm:grid-cols-3">
-          <div className="rounded-xl border border-sky-300/20 bg-sky-500/10 p-4">
-            <p className="text-xs uppercase tracking-[0.15em] text-sky-200">{language === "pl" ? "Nowość" : "New"}</p>
-            <p className="mt-1 text-sm text-slate-200">{language === "pl" ? "Lepszy Time Attack z combo, mnożnikiem i podsumowaniem rundy." : "Enhanced Time Attack with combo, multipliers and round summary."}</p>
-          </div>
-          <div className="rounded-xl border border-indigo-300/20 bg-indigo-500/10 p-4">
-            <p className="text-xs uppercase tracking-[0.15em] text-indigo-200">{language === "pl" ? "Tryby" : "Modes"}</p>
-            <p className="mt-1 text-sm text-slate-200">{language === "pl" ? "Nauka, dekodowanie, quiz i trening na prawdziwych METARach." : "Learn, decode, quiz, and practice on real METAR reports."}</p>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-4">
-            <p className="text-xs uppercase tracking-[0.15em] text-emerald-200">{language === "pl" ? "Cel" : "Goal"}</p>
-            <p className="mt-1 text-sm text-slate-200">{language === "pl" ? "Codziennie minimum 10 minut i zauważalny wzrost szybkości odczytu." : "Train at least 10 minutes daily and boost reading speed quickly."}</p>
-          </div>
+
+        <section className="grid gap-4 md:grid-cols-3">
+          {WOW_POINTS.map((point) => (
+            <article key={point.key} className="rounded-2xl border border-sky-300/20 bg-[var(--surface)]/85 p-5 shadow-lg transition hover:-translate-y-1 hover:border-cyan-300/50">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">{pl ? "Nowość" : "New"}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-200">{pl ? point.pl : point.en}</p>
+            </article>
+          ))}
         </section>
-        <section className="grid gap-4 sm:grid-cols-2">
-          <Link href="/learn" className="rounded-2xl border border-slate-500/40 bg-[var(--surface)]/85 p-6 hover:border-sky-400/50">
-            <h3 className="text-xl font-semibold text-white">{t("learnTitle")}</h3>
-            <p className="mt-2 text-sm text-slate-300">{t("learnDesc")}</p>
-          </Link>
-          <Link href="/time-attack" className="rounded-2xl border border-slate-500/40 bg-[var(--surface)]/85 p-6 hover:border-sky-400/50">
-            <h3 className="text-xl font-semibold text-white">{t("timeAttack")}</h3>
-            <p className="mt-2 text-sm text-slate-300">{language === "pl" ? "Szybka runda z limitem czasu, combo i mnożnikiem punktów." : "Fast round with timer, combo streak and score multiplier."}</p>
-          </Link>
+
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { href: "/learn", title: t("learnTitle"), desc: t("learnDesc") },
+            { href: "/time-attack", title: t("timeAttack"), desc: pl ? "Arcade training z combo, rangami i rekordami." : "Arcade training with combo, ranks and records." },
+            { href: "/real-weather", title: t("realWeather"), desc: pl ? "Live METAR/TAF z briefingiem pilota." : "Live METAR/TAF with pilot briefing." },
+            { href: "/progress", title: t("progress"), desc: pl ? "Ranga pilota, odznaki i plan treningu." : "Pilot rank, badges and training plan." },
+          ].map((item) => (
+            <Link key={item.href} href={item.href} className="rounded-2xl border border-slate-500/40 bg-[var(--surface)]/85 p-6 transition hover:-translate-y-1 hover:border-sky-400/50">
+              <h3 className="text-xl font-semibold text-white">{item.title}</h3>
+              <p className="mt-2 text-sm text-slate-300">{item.desc}</p>
+            </Link>
+          ))}
         </section>
       </main>
     </div>

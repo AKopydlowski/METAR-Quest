@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { loadProgress } from "@/lib/storage/progressStorage";
 import { getAchievements, loadLeaderboard } from "@/lib/storage/gameStorage";
+import { buildTrainingPlan, getPilotRank } from "@/lib/metar/briefing";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import type { SkillProgress } from "@/types/progress";
 
@@ -12,13 +14,17 @@ function skillAccuracy(skill: SkillProgress) {
 }
 
 export default function ProgressPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const pl = language === "pl";
   const quizProgress = useMemo(() => loadProgress("local-user", "quiz"), []);
   const timeAttackProgress = useMemo(() => loadProgress("local-user", "time-attack"), []);
   const leaderboard = useMemo(() => loadLeaderboard(), []);
   const quizAccuracy = quizProgress && quizProgress.totalAnswered > 0 ? Math.round((quizProgress.totalCorrect / quizProgress.totalAnswered) * 100) : 0;
   const timeAttackAccuracy = timeAttackProgress && timeAttackProgress.totalAnswered > 0 ? Math.round((timeAttackProgress.totalCorrect / timeAttackProgress.totalAnswered) * 100) : 0;
-  const achievements = getAchievements({ quizAccuracy, totalAnswered: (quizProgress?.totalAnswered ?? 0) + (timeAttackProgress?.totalAnswered ?? 0), bestTimeAttack: Math.max(...leaderboard.filter((x) => x.mode === "time-attack").map((x) => x.score), 0) });
+  const bestTimeAttack = Math.max(...leaderboard.filter((x) => x.mode === "time-attack").map((x) => x.score), 0);
+  const totalAnswered = (quizProgress?.totalAnswered ?? 0) + (timeAttackProgress?.totalAnswered ?? 0);
+  const blendedAccuracy = totalAnswered ? Math.round((((quizProgress?.totalCorrect ?? 0) + (timeAttackProgress?.totalCorrect ?? 0)) / totalAnswered) * 100) : 0;
+  const achievements = getAchievements({ quizAccuracy, totalAnswered, bestTimeAttack });
   const allSkills = [...(quizProgress?.skills ?? []), ...(timeAttackProgress?.skills ?? [])].reduce<Record<string, SkillProgress>>((acc, skill) => {
     const existing = acc[skill.skillTag] ?? { skillTag: skill.skillTag, correct: 0, incorrect: 0, streak: 0 };
     acc[skill.skillTag] = {
@@ -31,23 +37,58 @@ export default function ProgressPage() {
   }, {});
   const skills = Object.values(allSkills).sort((a, b) => skillAccuracy(a) - skillAccuracy(b));
   const weakest = skills[0];
+  const rank = getPilotRank({ totalAnswered, accuracy: blendedAccuracy, bestTimeAttack });
+  const trainingPlan = buildTrainingPlan(skills);
+  const shareText = `METAR Quest — ${rank.rank}: ${blendedAccuracy}% accuracy, ${totalAnswered} answers, best Time Attack ${bestTimeAttack}.`;
 
   return (
-    <main className="mx-auto w-full max-w-5xl p-6">
-      <h1 className="text-2xl font-semibold">Pilot Profile & Progress</h1>
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <section className="rounded-lg border p-4"><h2 className="font-semibold">Quiz</h2><p>Answered: {quizProgress?.totalAnswered ?? 0}</p><p>{t("accuracy")}: {quizAccuracy}%</p></section>
-        <section className="rounded-lg border p-4"><h2 className="font-semibold">Time Attack</h2><p>Answered: {timeAttackProgress?.totalAnswered ?? 0}</p><p>{t("accuracy")}: {timeAttackAccuracy}%</p></section>
+    <div className="w-full space-y-5">
+      <section className="rounded-[2rem] border border-sky-300/20 bg-slate-950/80 p-6 text-white shadow-2xl shadow-sky-950/30">
+        <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div className="rounded-3xl bg-gradient-to-br from-cyan-300 via-sky-300 to-indigo-300 p-6 text-slate-950">
+            <p className="text-xs font-black uppercase tracking-[0.26em] opacity-70">{pl ? "Ranga pilota" : "Pilot rank"}</p>
+            <h1 className="mt-3 text-5xl font-black tracking-tight">{rank.rank}</h1>
+            <div className="mt-5 h-4 rounded-full bg-slate-950/20">
+              <div className="h-4 rounded-full bg-slate-950" style={{ width: `${Math.min(100, rank.progress)}%` }} />
+            </div>
+            <p className="mt-3 text-sm font-bold">{rank.next}</p>
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">{pl ? "Profil i plan treningu" : "Profile & training plan"}</p>
+            <h2 className="mt-2 text-4xl font-black">{pl ? "Twój instruktor meteo" : "Your weather instructor"}</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+              {pl ? "Aplikacja analizuje quiz, Time Attack i słabe obszary, a potem zamienia postęp w konkretny plan treningowy." : "The app analyzes quiz, Time Attack and weak areas, then turns progress into a concrete training plan."}
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs text-slate-400">{t("answers")}</p><p className="text-3xl font-black">{totalAnswered}</p></div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs text-slate-400">{t("accuracy")}</p><p className="text-3xl font-black">{blendedAccuracy}%</p></div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs text-slate-400">Best TA</p><p className="text-3xl font-black">{bestTimeAttack}</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <section className="rounded-3xl border border-sky-300/20 bg-[var(--surface)]/90 p-5 shadow-xl"><h2 className="font-semibold">Quiz</h2><p>Answered: {quizProgress?.totalAnswered ?? 0}</p><p>{t("accuracy")}: {quizAccuracy}%</p></section>
+        <section className="rounded-3xl border border-sky-300/20 bg-[var(--surface)]/90 p-5 shadow-xl"><h2 className="font-semibold">Time Attack</h2><p>Answered: {timeAttackProgress?.totalAnswered ?? 0}</p><p>{t("accuracy")}: {timeAttackAccuracy}%</p></section>
       </div>
 
-      <section className="mt-4 rounded-lg border p-4">
+      <section className="rounded-3xl border border-emerald-300/20 bg-emerald-500/10 p-5 shadow-xl">
+        <h2 className="text-xl font-bold">{pl ? "Dzisiejszy plan treningu" : "Today’s training plan"}</h2>
+        <ol className="mt-4 grid gap-3 md:grid-cols-3">
+          {trainingPlan.map((item, index) => <li key={item} className="rounded-2xl border border-white/10 bg-black/15 p-4"><span className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Step {index + 1}</span><p className="mt-2 text-sm">{item}</p></li>)}
+        </ol>
+        <Link href="/missions" className="mt-4 inline-flex rounded-xl bg-emerald-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-emerald-300">{pl ? "Start misji" : "Start mission"}</Link>
+      </section>
+
+      <section className="rounded-3xl border border-slate-500/30 bg-[var(--surface)]/90 p-5 shadow-xl">
         <h2 className="font-semibold">{t("weakAreas")}</h2>
         {skills.length ? (
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             {skills.map((skill) => {
               const accuracy = skillAccuracy(skill);
               return (
-                <article key={skill.skillTag} className="rounded-xl border p-3">
+                <article key={skill.skillTag} className="rounded-xl border border-slate-500/30 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="font-semibold capitalize">{skill.skillTag}</h3>
                     <span className="text-sm">{accuracy}%</span>
@@ -58,12 +99,16 @@ export default function ProgressPage() {
               );
             })}
           </div>
-        ) : <p className="mt-2 text-sm">No skill data yet.</p>}
+        ) : <p className="mt-2 text-sm">{pl ? "Brak danych — zacznij od quizu albo Time Attack." : "No skill data yet — start with Quiz or Time Attack."}</p>}
         {weakest && <p className="mt-4 rounded-xl bg-amber-400/10 p-3 text-sm"><strong>{t("recommendedPractice")}:</strong> focus on {weakest.skillTag} questions first.</p>}
       </section>
 
-      <section className="mt-4 rounded-lg border p-4"><h2 className="font-semibold">Achievements</h2><ul className="mt-2 grid gap-2">{achievements.map((a) => <li key={a.id}>{a.unlocked ? "🏅" : "🔒"} {a.name}</li>)}</ul></section>
-      <section className="mt-4 rounded-lg border p-4"><h2 className="font-semibold">Local Leaderboard</h2><ul className="mt-2 grid gap-1 text-sm">{leaderboard.length ? leaderboard.map((e, i) => <li key={`${e.mode}-${e.at}`}>{i + 1}. {e.mode}: {e.score} ({new Date(e.at).toLocaleDateString()})</li>) : <li>No entries yet.</li>}</ul></section>
-    </main>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-3xl border border-violet-300/20 bg-violet-500/10 p-5 shadow-xl"><h2 className="font-semibold">Achievements</h2><ul className="mt-2 grid gap-2">{achievements.map((a) => <li key={a.id}>{a.unlocked ? "🏅" : "🔒"} {a.name}</li>)}</ul></section>
+        <section className="rounded-3xl border border-cyan-300/20 bg-cyan-500/10 p-5 shadow-xl"><h2 className="font-semibold">Share card</h2><div className="mt-3 rounded-2xl bg-slate-950 p-4 text-white"><p className="text-xs uppercase tracking-[0.2em] text-cyan-200">METAR Quest</p><p className="mt-2 text-2xl font-black">{rank.rank}</p><p className="mt-2 text-sm text-slate-300">{shareText}</p></div></section>
+      </div>
+
+      <section className="rounded-3xl border border-slate-500/30 bg-[var(--surface)]/90 p-5 shadow-xl"><h2 className="font-semibold">Local Leaderboard</h2><ul className="mt-2 grid gap-1 text-sm">{leaderboard.length ? leaderboard.map((e, i) => <li key={`${e.mode}-${e.at}`}>{i + 1}. {e.mode}: {e.score} ({new Date(e.at).toLocaleDateString()})</li>) : <li>No entries yet.</li>}</ul></section>
+    </div>
   );
 }
