@@ -4,6 +4,10 @@ METAR Quest is an educational aviation weather app for learning how to decode ME
 
 ## Features
 
+- Cinematic METAR token-by-token decoding
+- Pilot briefing cards with GO / CAUTION / NO-GO guidance
+- Cockpit-style weather visualization for wind, visibility, clouds, and flight category
+- Live Mission Mode for scenario-based decisions
 - METAR decoding practice
 - TAF basics
 - Multiple-choice quiz mode
@@ -11,6 +15,8 @@ METAR Quest is an educational aviation weather app for learning how to decode ME
 - Real weather data by ICAO airport code
 - Local progress tracking
 - Learning statistics
+- Pilot ranks, achievements, weak-area analysis, and personalized training plans
+- Share-card summaries for progress and Time Attack
 - Language switch (PL/EN)
 - Theme switch (light/dark)
 - Responsive interface
@@ -35,7 +41,10 @@ Includes streak scoring, hints, and local leaderboard save.
 Time-based mode (60s) with combo and score multiplier.
 
 ### Real Weather
-Fetches live METAR data by ICAO code using the AviationWeather API.
+Fetches live METAR data by ICAO code using the AviationWeather API and turns it into a pilot-friendly briefing.
+
+### Missions
+Scenario mode where the user loads live weather, chooses a pilot profile, and makes a GO / CAUTION / NO-GO decision.
 
 ### Progress
 Shows local learning stats and historical performance.

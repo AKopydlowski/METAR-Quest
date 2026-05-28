@@ -8,7 +8,8 @@ import type { QuizQuestion } from "@/types/quiz";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 
 export default function TimeAttackPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const pl = language === "pl";
   const localQuestions = useMemo(() => buildQuestionBank(), []);
   const [questions, setQuestions] = useState<QuizQuestion[]>(localQuestions.slice(0, 10));
   const [source, setSource] = useState("local");
@@ -93,42 +94,47 @@ export default function TimeAttackPage() {
 
   const isFinished = timeLeft <= 0;
   const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
+  const multiplier = combo >= 10 ? 3 : combo >= 5 ? 2 : 1;
+  const rank = score >= 35 ? "Ace" : score >= 22 ? "Gold" : score >= 12 ? "Silver" : "Bronze";
 
   return (
-    <main className="mx-auto w-full max-w-4xl p-6">
-      <section className="rounded-2xl border border-sky-200/40 bg-gradient-to-br from-sky-500/15 via-indigo-500/10 to-transparent p-6 shadow-lg backdrop-blur">
+    <div className="w-full space-y-5">
+      <section className="overflow-hidden rounded-[2rem] border border-sky-300/20 bg-slate-950/80 p-6 text-white shadow-2xl shadow-sky-950/30">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Time Attack</h1>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{t("questionSource")}: {source === "live-api" ? t("liveApi") : t("localDb")}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">{pl ? "Trener arcade" : "Arcade trainer"}</p>
+            <h1 className="mt-2 text-4xl font-black tracking-tight">Time Attack</h1>
+            <p className="mt-2 text-sm text-slate-300">{t("questionSource")}: {source === "live-api" ? t("liveApi") : t("localDb")}</p>
           </div>
           <label className="text-sm">
             <span className="mb-1 block text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{t("duration")}</span>
-            <select value={duration} onChange={(event) => restartRound(Number(event.target.value))} className="rounded border bg-white px-3 py-2 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
+            <select value={duration} onChange={(event) => restartRound(Number(event.target.value))} className="rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-white">
               {[30, 60, 120].map((seconds) => <option key={seconds} value={seconds}>{seconds}s</option>)}
             </select>
           </label>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("time")}</p><p className="text-2xl font-semibold">{Math.max(0, timeLeft)}s</p></div>
-          <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("score")}</p><p className="text-2xl font-semibold">{score}</p></div>
-          <div className="rounded-xl border p-3"><p className="text-xs uppercase">Combo</p><p className="text-2xl font-semibold">{combo}🔥</p></div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-4">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs uppercase text-slate-400">{t("time")}</p><p className="text-3xl font-black">{Math.max(0, timeLeft)}s</p></div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs uppercase text-slate-400">{t("score")}</p><p className="text-3xl font-black">{score}</p></div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs uppercase text-slate-400">Combo</p><p className="text-3xl font-black">{combo}🔥</p></div>
+          <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4"><p className="text-xs uppercase text-cyan-200">Multiplier</p><p className="text-3xl font-black">x{multiplier}</p></div>
         </div>
         <button onClick={() => setIsPaused((paused) => !paused)} disabled={isFinished} className="mt-4 rounded-xl border border-sky-300/40 px-4 py-2 text-sm font-semibold disabled:opacity-50">
           {isPaused ? t("resume") : t("pause")}
         </button>
       </section>
 
-      <section className="mt-5 rounded-2xl border bg-white/80 p-6 shadow-md dark:bg-zinc-900/80">
+      <section className="rounded-[2rem] border border-slate-500/30 bg-[var(--surface)]/90 p-6 shadow-xl">
         {isFinished ? (
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold">{t("endOfRound")}</h2>
+            <h2 className="text-3xl font-black">{t("endOfRound")} — {rank}</h2>
             <p className="text-sm text-zinc-600 dark:text-zinc-300">{t("score")}: <span className="font-semibold">{score}</span> pkt</p>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("accuracy")}</p><p className="text-xl font-semibold">{accuracy}%</p></div>
               <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("bestCombo")}</p><p className="text-xl font-semibold">{bestCombo}</p></div>
               <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("answers")}</p><p className="text-xl font-semibold">{answered}</p></div>
             </div>
+            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/10 p-4"><p className="text-xs uppercase tracking-[0.2em] text-cyan-300">Share card</p><p className="mt-2 font-mono text-sm">METAR Quest Time Attack: {score} pts, {accuracy}% accuracy, {bestCombo} best combo, rank {rank}.</p></div>
             <button onClick={() => restartRound()} className="rounded-xl bg-sky-500 px-4 py-2 font-semibold text-slate-950 hover:bg-sky-400">{t("playAgain")}</button>
           </div>
         ) : isPaused ? (
@@ -172,6 +178,6 @@ export default function TimeAttackPage() {
           </>
         )}
       </section>
-    </main>
+    </div>
   );
 }
