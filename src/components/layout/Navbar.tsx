@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useLanguage } from "./LanguageProvider";
-import { loadSettings, saveSettings } from "@/lib/storage/gameStorage";
+import { loadSettings, saveSettings, type GameSettings } from "@/lib/storage/gameStorage";
 
 function NavLink({ href, label, onClick }: { href: string; label: string; onClick?: () => void }) {
   const pathname = usePathname();
@@ -19,7 +19,7 @@ export default function Navbar() {
 
   const toggleTheme = () => {
     const s = loadSettings();
-    const next = { ...s, theme: s.theme === "dark" ? "light" : "dark" };
+    const next: GameSettings = { ...s, theme: s.theme === "dark" ? "light" : "dark" };
     saveSettings(next);
     document.documentElement.classList.toggle("dark", next.theme === "dark");
   };

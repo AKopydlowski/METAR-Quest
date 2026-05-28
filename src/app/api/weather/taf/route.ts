@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getLatestTaf } from "@/lib/weather/aviationWeatherClient";
 
 export async function GET(request: NextRequest) {
   const station = request.nextUrl.searchParams.get("station")?.trim().toUpperCase();
@@ -10,9 +11,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({
-    station,
-    taf: null,
-    message: "No TAF data available yet.",
-  });
+  if (!/^[A-Z]{4}$/.test(station)) {
+    return NextResponse.json(
+      { error: "Station must be a 4-letter ICAO code" },
+      { status: 400 },
+    );
+  }
+
+  const taf = await getLatestTaf(station);
+  return NextResponse.json({ station, taf });
 }

@@ -10,10 +10,11 @@ export interface MetarWind {
 export interface MetarVisibility {
   statuteMiles: number;
   raw: string;
+  cavok?: boolean;
 }
 
 export interface MetarCloudLayer {
-  coverage: "SKC" | "CLR" | "FEW" | "SCT" | "BKN" | "OVC" | "VV";
+  coverage: "SKC" | "CLR" | "FEW" | "SCT" | "BKN" | "OVC" | "VV" | "NCD";
   baseFtAgl?: number;
   cloudType?: "CB" | "TCU";
 }
@@ -28,6 +29,21 @@ export interface MetarAltimeter {
   hectopascals?: number;
 }
 
+export interface MetarRunwayVisualRange {
+  runway: string;
+  rangeFt?: number;
+  rangeMeters?: number;
+  tendency?: "U" | "D" | "N";
+  raw: string;
+}
+
+export interface MetarWeatherPhenomenon {
+  raw: string;
+  intensity?: "light" | "heavy" | "vicinity";
+  descriptors: string[];
+  phenomena: string[];
+}
+
 export interface ParsedMetar {
   station: string;
   observedAt?: string;
@@ -35,9 +51,12 @@ export interface ParsedMetar {
   wind?: MetarWind;
   visibility?: MetarVisibility;
   weatherCodes: string[];
+  weather: MetarWeatherPhenomenon[];
   clouds: MetarCloudLayer[];
   temperature?: MetarTemperature;
   altimeter?: MetarAltimeter;
+  runwayVisualRange: MetarRunwayVisualRange[];
+  trend?: string[];
   remarks?: string;
   flightCategory?: FlightCategory;
 }
