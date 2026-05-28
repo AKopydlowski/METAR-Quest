@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { loadProgress, saveProgress } from "@/lib/storage/progressStorage";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { recordProgressAnswer } from "@/lib/storage/progressStorage";
+import { saveLeaderboardEntry } from "@/lib/storage/gameStorage";
 import { buildQuestionBank } from "@/lib/metar/questions";
 import type { QuizQuestion } from "@/types/quiz";
 import { useLanguage } from "@/components/layout/LanguageProvider";
@@ -11,7 +12,9 @@ export default function TimeAttackPage() {
   const localQuestions = useMemo(() => buildQuestionBank(), []);
   const [questions, setQuestions] = useState<QuizQuestion[]>(localQuestions.slice(0, 10));
   const [source, setSource] = useState("local");
+  const [duration, setDuration] = useState(60);
   const [timeLeft, setTimeLeft] = useState(60);
+  const [isPaused, setIsPaused] = useState(false);
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
@@ -19,6 +22,7 @@ export default function TimeAttackPage() {
   const [answered, setAnswered] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const savedScoreRef = useRef(false);
 
   useEffect(() => {
     void fetch("/api/quiz/time-attack")
@@ -33,15 +37,24 @@ export default function TimeAttackPage() {
   }, []);
 
   useEffect(() => {
-    if (timeLeft <= 0) return;
-    const timer = setInterval(() => setTimeLeft((t) => t - 1), 1000);
+    if (timeLeft <= 0 || isPaused) return;
+    const timer = setInterval(() => setTimeLeft((time) => time - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [timeLeft, isPaused]);
+
+  useEffect(() => {
+    if (timeLeft <= 0 && !savedScoreRef.current) {
+      saveLeaderboardEntry("time-attack", score);
+      savedScoreRef.current = true;
+    }
+  }, [timeLeft, score]);
 
   const q = questions[index % questions.length];
+  const selectedChoice = q?.choices.find((choice) => choice.id === selectedId);
+  const correctChoice = q?.choices.find((choice) => choice.isCorrect);
 
   const chooseAnswer = (choiceId: string, isCorrect: boolean) => {
-    if (timeLeft <= 0 || selectedId) return;
+    if (timeLeft <= 0 || selectedId || isPaused || !q) return;
 
     setSelectedId(choiceId);
     setAnswered((n) => n + 1);
@@ -56,25 +69,16 @@ export default function TimeAttackPage() {
       setCombo(0);
     }
 
-    const existing = loadProgress("local-user", "time-attack");
-    saveProgress(
-      {
-        userId: "local-user",
-        totalAnswered: (existing?.totalAnswered ?? 0) + 1,
-        totalCorrect: (existing?.totalCorrect ?? 0) + (isCorrect ? 1 : 0),
-        updatedAt: new Date().toISOString(),
-        skills: existing?.skills ?? [],
-      },
-      "time-attack",
-    );
+    recordProgressAnswer("local-user", "time-attack", q.skillTag, isCorrect);
 
     window.setTimeout(() => {
       setIndex((i) => i + 1);
       setSelectedId(null);
-    }, 450);
+    }, 650);
   };
 
-  const restartRound = () => {
+  const restartRound = (nextDuration = duration) => {
+    setDuration(nextDuration);
     setIndex(0);
     setScore(0);
     setCombo(0);
@@ -82,7 +86,9 @@ export default function TimeAttackPage() {
     setAnswered(0);
     setCorrect(0);
     setSelectedId(null);
-    setTimeLeft(60);
+    setIsPaused(false);
+    savedScoreRef.current = false;
+    setTimeLeft(nextDuration);
   };
 
   const isFinished = timeLeft <= 0;
@@ -91,13 +97,26 @@ export default function TimeAttackPage() {
   return (
     <main className="mx-auto w-full max-w-4xl p-6">
       <section className="rounded-2xl border border-sky-200/40 bg-gradient-to-br from-sky-500/15 via-indigo-500/10 to-transparent p-6 shadow-lg backdrop-blur">
-        <h1 className="text-3xl font-bold tracking-tight">Time Attack</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{t("questionSource")}: {source === "live-api" ? t("liveApi") : t("localDb")}</p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Time Attack</h1>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{t("questionSource")}: {source === "live-api" ? t("liveApi") : t("localDb")}</p>
+          </div>
+          <label className="text-sm">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{t("duration")}</span>
+            <select value={duration} onChange={(event) => restartRound(Number(event.target.value))} className="rounded border bg-white px-3 py-2 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
+              {[30, 60, 120].map((seconds) => <option key={seconds} value={seconds}>{seconds}s</option>)}
+            </select>
+          </label>
+        </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("time")}</p><p className="text-2xl font-semibold">{Math.max(0, timeLeft)}s</p></div>
           <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("score")}</p><p className="text-2xl font-semibold">{score}</p></div>
           <div className="rounded-xl border p-3"><p className="text-xs uppercase">Combo</p><p className="text-2xl font-semibold">{combo}🔥</p></div>
         </div>
+        <button onClick={() => setIsPaused((paused) => !paused)} disabled={isFinished} className="mt-4 rounded-xl border border-sky-300/40 px-4 py-2 text-sm font-semibold disabled:opacity-50">
+          {isPaused ? t("resume") : t("pause")}
+        </button>
       </section>
 
       <section className="mt-5 rounded-2xl border bg-white/80 p-6 shadow-md dark:bg-zinc-900/80">
@@ -110,36 +129,47 @@ export default function TimeAttackPage() {
               <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("bestCombo")}</p><p className="text-xl font-semibold">{bestCombo}</p></div>
               <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("answers")}</p><p className="text-xl font-semibold">{answered}</p></div>
             </div>
-            <button onClick={restartRound} className="rounded-xl bg-sky-500 px-4 py-2 font-semibold text-slate-950 hover:bg-sky-400">{t("playAgain")}</button>
+            <button onClick={() => restartRound()} className="rounded-xl bg-sky-500 px-4 py-2 font-semibold text-slate-950 hover:bg-sky-400">{t("playAgain")}</button>
+          </div>
+        ) : isPaused ? (
+          <div className="rounded-xl border border-amber-300/30 bg-amber-400/10 p-6 text-center">
+            <h2 className="text-2xl font-bold">{t("pause")}</h2>
+            <button onClick={() => setIsPaused(false)} className="mt-4 rounded-xl bg-sky-500 px-4 py-2 font-semibold text-slate-950">{t("resume")}</button>
           </div>
         ) : (
           <>
-        <p className="text-lg font-medium">{q.prompt}</p>
-        <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/60 p-3 dark:border-indigo-500/40 dark:bg-indigo-900/20">
-          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-200">METAR reference</p>
-          <p className="mt-1 font-mono text-sm text-indigo-950 dark:text-indigo-100">{q.metarRaw}</p>
-        </div>
-        <div className="mt-4 grid gap-2">
-          {q.choices.map((choice) => (
-            <button
-              key={choice.id}
-              disabled={timeLeft <= 0 || Boolean(selectedId)}
-              onClick={() => chooseAnswer(choice.id, choice.isCorrect)}
-              className={`rounded-xl border p-3 text-left transition disabled:opacity-50 ${
-                !selectedId
-                  ? "hover:-translate-y-0.5 hover:border-sky-400 hover:bg-sky-50 dark:hover:bg-zinc-800"
-                  : choice.isCorrect
-                    ? "border-emerald-500 bg-emerald-500/10"
-                    : selectedId === choice.id
-                      ? "border-rose-500 bg-rose-500/10"
-                      : "opacity-70"
-              }`}
-            >
-              {choice.label}
-            </button>
-          ))}
-        </div>
-        </>
+            <p className="text-lg font-medium">{q.prompt}</p>
+            <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/60 p-3 dark:border-indigo-500/40 dark:bg-indigo-900/20">
+              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-200">METAR reference</p>
+              <p className="mt-1 font-mono text-sm text-indigo-950 dark:text-indigo-100">{q.metarRaw}</p>
+            </div>
+            <div className="mt-4 grid gap-2">
+              {q.choices.map((choice) => (
+                <button
+                  key={choice.id}
+                  disabled={timeLeft <= 0 || Boolean(selectedId)}
+                  onClick={() => chooseAnswer(choice.id, choice.isCorrect)}
+                  className={`rounded-xl border p-3 text-left transition disabled:opacity-80 ${
+                    !selectedId
+                      ? "hover:-translate-y-0.5 hover:border-sky-400 hover:bg-sky-50 dark:hover:bg-zinc-800"
+                      : choice.isCorrect
+                        ? "border-emerald-500 bg-emerald-500/10"
+                        : selectedId === choice.id
+                          ? "border-rose-500 bg-rose-500/10"
+                          : "opacity-70"
+                  }`}
+                >
+                  {choice.label}
+                </button>
+              ))}
+            </div>
+            {selectedChoice && (
+              <div className="mt-4 rounded-xl border border-sky-300/20 bg-sky-500/10 p-3 text-sm">
+                <p className="font-semibold">{selectedChoice.isCorrect ? t("correctAnswer") : `${t("correctAnswer")}: ${correctChoice?.label ?? "?"}`}</p>
+                <p className="mt-1">{selectedChoice.rationale ?? correctChoice?.rationale}</p>
+              </div>
+            )}
+          </>
         )}
       </section>
     </main>

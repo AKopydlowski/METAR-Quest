@@ -46,6 +46,18 @@ const translations: Record<Language, Dict> = {
     accuracy: "Accuracy",
     bestCombo: "Best combo",
     answers: "Answers",
+    difficulty: "Difficulty",
+    all: "All",
+    easy: "Easy",
+    medium: "Medium",
+    hard: "Hard",
+    explanation: "Explanation",
+    correctAnswer: "Correct answer",
+    pause: "Pause",
+    resume: "Resume",
+    duration: "Duration",
+    weakAreas: "Weak areas",
+    recommendedPractice: "Recommended practice",
   },
   pl: {
     appName: "METAR Quest",
@@ -86,6 +98,18 @@ const translations: Record<Language, Dict> = {
     accuracy: "Skuteczność",
     bestCombo: "Najlepsze combo",
     answers: "Odpowiedzi",
+    difficulty: "Trudność",
+    all: "Wszystkie",
+    easy: "Łatwe",
+    medium: "Średnie",
+    hard: "Trudne",
+    explanation: "Wyjaśnienie",
+    correctAnswer: "Poprawna odpowiedź",
+    pause: "Pauza",
+    resume: "Wznów",
+    duration: "Czas rundy",
+    weakAreas: "Słabsze obszary",
+    recommendedPractice: "Rekomendowany trening",
   },
 };
 
@@ -98,7 +122,16 @@ type LanguageContextType = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<Language>("pl");
+  const [language, setLanguageState] = useState<Language>(() => {
+    if (typeof window === "undefined") return "pl";
+    const saved = window.localStorage.getItem("metar-quest:language");
+    return saved === "pl" || saved === "en" ? saved : "pl";
+  });
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    if (typeof window !== "undefined") window.localStorage.setItem("metar-quest:language", lang);
+  };
 
   const value = useMemo(
     () => ({
