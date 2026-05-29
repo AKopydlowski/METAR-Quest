@@ -42,11 +42,22 @@ export function recordProgressAnswer(userId: string, mode: ProgressMode, skillTa
 
 export function updateSkillProgress(skills: SkillProgress[], skillTag: string, isCorrect: boolean): SkillProgress[] {
   const existing = skills.find((skill) => skill.skillTag === skillTag);
+  const now = new Date();
+  const previousAttempts = existing?.attempts ?? (existing ? existing.correct + existing.incorrect : 0);
+  const attempts = previousAttempts + 1;
+  const streak = isCorrect ? (existing?.streak ?? 0) + 1 : 0;
+  const ease = Math.max(1.3, Math.min(2.8, (existing?.ease ?? 2.1) + (isCorrect ? 0.12 : -0.28)));
+  const intervalDays = isCorrect ? Math.max(1, Math.round(Math.min(21, ease * Math.max(1, streak)))) : 1;
+  const nextReview = new Date(now.getTime() + intervalDays * 86_400_000);
   const updated: SkillProgress = {
     skillTag,
     correct: (existing?.correct ?? 0) + (isCorrect ? 1 : 0),
     incorrect: (existing?.incorrect ?? 0) + (isCorrect ? 0 : 1),
-    streak: isCorrect ? (existing?.streak ?? 0) + 1 : 0,
+    streak,
+    attempts,
+    lastAnsweredAt: now.toISOString(),
+    nextReviewAt: nextReview.toISOString(),
+    ease,
   };
 
   return [...skills.filter((skill) => skill.skillTag !== skillTag), updated].sort((a, b) => a.skillTag.localeCompare(b.skillTag));

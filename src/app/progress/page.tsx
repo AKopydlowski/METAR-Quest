@@ -5,6 +5,8 @@ import Link from "next/link";
 import { exportProgressBundle, importProgressBundle, loadProgress } from "@/lib/storage/progressStorage";
 import { getAchievements, loadLeaderboard } from "@/lib/storage/gameStorage";
 import { buildTrainingPlan, getPilotRank } from "@/lib/metar/briefing";
+import { buildQuestionBank } from "@/lib/metar/questions";
+import { getNextRecommendedDrill, getSkillMastery } from "@/lib/training/adaptive";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import type { SkillProgress } from "@/types/progress";
 
@@ -19,20 +21,28 @@ export default function ProgressPage() {
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const quizProgress = loadProgress("local-user", "quiz");
   const timeAttackProgress = loadProgress("local-user", "time-attack");
+  const missionProgress = loadProgress("local-user", "mission");
+  const examProgress = loadProgress("local-user", "exam");
   const leaderboard = loadLeaderboard();
   const quizAccuracy = quizProgress && quizProgress.totalAnswered > 0 ? Math.round((quizProgress.totalCorrect / quizProgress.totalAnswered) * 100) : 0;
   const timeAttackAccuracy = timeAttackProgress && timeAttackProgress.totalAnswered > 0 ? Math.round((timeAttackProgress.totalCorrect / timeAttackProgress.totalAnswered) * 100) : 0;
   const bestTimeAttack = Math.max(...leaderboard.filter((x) => x.mode === "time-attack").map((x) => x.score), 0);
-  const totalAnswered = (quizProgress?.totalAnswered ?? 0) + (timeAttackProgress?.totalAnswered ?? 0);
-  const blendedAccuracy = totalAnswered ? Math.round((((quizProgress?.totalCorrect ?? 0) + (timeAttackProgress?.totalCorrect ?? 0)) / totalAnswered) * 100) : 0;
+  const totalAnswered = (quizProgress?.totalAnswered ?? 0) + (timeAttackProgress?.totalAnswered ?? 0) + (missionProgress?.totalAnswered ?? 0) + (examProgress?.totalAnswered ?? 0);
+  const blendedAccuracy = totalAnswered ? Math.round((((quizProgress?.totalCorrect ?? 0) + (timeAttackProgress?.totalCorrect ?? 0) + (missionProgress?.totalCorrect ?? 0) + (examProgress?.totalCorrect ?? 0)) / totalAnswered) * 100) : 0;
   const achievements = getAchievements({ quizAccuracy, totalAnswered, bestTimeAttack });
-  const allSkills = [...(quizProgress?.skills ?? []), ...(timeAttackProgress?.skills ?? [])].reduce<Record<string, SkillProgress>>((acc, skill) => {
+  const allSkills = [...(quizProgress?.skills ?? []), ...(timeAttackProgress?.skills ?? []), ...(missionProgress?.skills ?? []), ...(examProgress?.skills ?? [])].reduce<Record<string, SkillProgress>>((acc, skill) => {
     const existing = acc[skill.skillTag] ?? { skillTag: skill.skillTag, correct: 0, incorrect: 0, streak: 0 };
+    const latestAnswered = [existing.lastAnsweredAt, skill.lastAnsweredAt].filter(Boolean).sort().at(-1);
+    const latestReview = [existing.nextReviewAt, skill.nextReviewAt].filter(Boolean).sort().at(-1);
     acc[skill.skillTag] = {
       skillTag: skill.skillTag,
       correct: existing.correct + skill.correct,
       incorrect: existing.incorrect + skill.incorrect,
       streak: Math.max(existing.streak, skill.streak),
+      attempts: (existing.attempts ?? existing.correct + existing.incorrect) + (skill.attempts ?? skill.correct + skill.incorrect),
+      lastAnsweredAt: latestAnswered,
+      nextReviewAt: latestReview,
+      ease: Math.max(existing.ease ?? 0, skill.ease ?? 0) || undefined,
     };
     return acc;
   }, {});
@@ -40,6 +50,8 @@ export default function ProgressPage() {
   const weakest = skills[0];
   const rank = getPilotRank({ totalAnswered, accuracy: blendedAccuracy, bestTimeAttack });
   const trainingPlan = buildTrainingPlan(skills);
+  const mastery = getSkillMastery({ userId: "local-user", totalAnswered, totalCorrect: (quizProgress?.totalCorrect ?? 0) + (timeAttackProgress?.totalCorrect ?? 0) + (missionProgress?.totalCorrect ?? 0) + (examProgress?.totalCorrect ?? 0), updatedAt: new Date().toISOString(), skills });
+  const recommendation = getNextRecommendedDrill(quizProgress, buildQuestionBank(language));
   const shareText = `METAR Quest — ${rank.rank}: ${blendedAccuracy}% accuracy, ${totalAnswered} answers, best Time Attack ${bestTimeAttack}.`;
 
   const exportProgress = () => {
@@ -87,9 +99,11 @@ export default function ProgressPage() {
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <section className="rounded-3xl border border-sky-300/20 bg-[var(--surface)]/90 p-5 shadow-xl"><h2 className="font-semibold">Quiz</h2><p>Answered: {quizProgress?.totalAnswered ?? 0}</p><p>{t("accuracy")}: {quizAccuracy}%</p></section>
         <section className="rounded-3xl border border-sky-300/20 bg-[var(--surface)]/90 p-5 shadow-xl"><h2 className="font-semibold">Time Attack</h2><p>Answered: {timeAttackProgress?.totalAnswered ?? 0}</p><p>{t("accuracy")}: {timeAttackAccuracy}%</p></section>
+        <section className="rounded-3xl border border-sky-300/20 bg-[var(--surface)]/90 p-5 shadow-xl"><h2 className="font-semibold">Missions</h2><p>Answered: {missionProgress?.totalAnswered ?? 0}</p><p>{t("accuracy")}: {missionProgress?.totalAnswered ? Math.round(((missionProgress?.totalCorrect ?? 0) / missionProgress.totalAnswered) * 100) : 0}%</p></section>
+        <section className="rounded-3xl border border-sky-300/20 bg-[var(--surface)]/90 p-5 shadow-xl"><h2 className="font-semibold">Exam</h2><p>Answered: {examProgress?.totalAnswered ?? 0}</p><p>{t("accuracy")}: {examProgress?.totalAnswered ? Math.round(((examProgress?.totalCorrect ?? 0) / examProgress.totalAnswered) * 100) : 0}%</p></section>
       </div>
 
       <section className="rounded-3xl border border-emerald-300/20 bg-emerald-500/10 p-5 shadow-xl">
@@ -98,6 +112,25 @@ export default function ProgressPage() {
           {trainingPlan.map((item, index) => <li key={item} className="rounded-2xl border border-white/10 bg-black/15 p-4"><span className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Step {index + 1}</span><p className="mt-2 text-sm">{item}</p></li>)}
         </ol>
         <div className="mt-4 flex flex-wrap gap-2"><Link href="/missions" className="inline-flex rounded-xl bg-emerald-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-emerald-300">{pl ? "Daily Live Mission" : "Daily Live Mission"}</Link><Link href={weakest ? `/quiz?skill=${encodeURIComponent(weakest.skillTag)}` : "/quiz"} className="inline-flex rounded-xl border border-emerald-300/40 px-4 py-2 text-sm font-bold text-emerald-200 hover:bg-emerald-500/10">{pl ? "Ćwicz słaby obszar" : "Drill weak area"}</Link></div>
+      </section>
+
+      <section className="rounded-3xl border border-cyan-300/20 bg-cyan-500/10 p-5 shadow-xl">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-xl font-bold">{pl ? "Adaptive Training 2.0" : "Adaptive Training 2.0"}</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">{recommendation.reason}</p>
+          </div>
+          <Link href={recommendation.href} className="inline-flex rounded-xl bg-cyan-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-cyan-300">{pl ? "Start rekomendowanego drillu" : "Start recommended drill"}</Link>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {mastery.length ? mastery.slice(0, 6).map((item) => (
+            <article key={item.skillTag} className="rounded-2xl border border-white/10 bg-black/15 p-4">
+              <div className="flex items-center justify-between gap-3"><h3 className="font-bold capitalize">{item.skillTag}</h3><span className="text-xs font-black uppercase">P{item.priority}</span></div>
+              <div className="mt-3 h-2 rounded bg-slate-700"><div className="h-2 rounded bg-cyan-300" style={{ width: `${item.mastery}%` }} /></div>
+              <p className="mt-2 text-xs text-slate-400">Mastery {item.mastery}% • accuracy {item.accuracy}% • {item.due ? (pl ? "do powtórki" : "due") : (pl ? "zaplanowane" : "scheduled")}</p>
+            </article>
+          )) : <p className="text-sm">{pl ? "Zrób kilka pytań, aby odblokować model mastery." : "Answer a few questions to unlock the mastery model."}</p>}
+        </div>
       </section>
 
       <section className="rounded-3xl border border-slate-500/30 bg-[var(--surface)]/90 p-5 shadow-xl">

@@ -15,7 +15,7 @@ const OBS_TIME_RE = /^\d{6}Z$/;
 const VARIABLE_WIND_RE = /^(\d{3})V(\d{3})$/;
 const RVR_RE = /^R(\d{2}[LCR]?)[/](?:P|M)?(\d{4})(FT)?(?:[/]([UDN]))?$/;
 const TREND_TOKENS = new Set(["NOSIG", "NSW", "BECMG", "TEMPO", "PROB30", "PROB40", "FM", "TL", "AT"]);
-const DESCRIPTOR_CODES = new Set(["MI", "PR", "BC", "DR", "BL", "SH", "TS", "FZ"]);
+const DESCRIPTOR_CODES = new Set(["MI", "PR", "BC", "DR", "BL", "SH", "TS", "FZ", "VC"]);
 const PHENOMENA_CODES = new Set(["DZ", "RA", "SN", "SG", "IC", "PL", "GR", "GS", "UP", "BR", "FG", "FU", "VA", "DU", "SA", "HZ", "PY", "PO", "SQ", "FC", "SS", "DS"]);
 const REPORT_MODIFIERS = new Set(["AUTO", "COR", "CCA", "CCB", "NIL"]);
 
@@ -36,6 +36,9 @@ export function parseMetar(rawText: string): ParsedMetar {
   const altimeter = operationalTokens.map(parseAltimeter).find(Boolean) as MetarAltimeter | undefined;
   const runwayVisualRange = operationalTokens.map(parseRunwayVisualRange).filter(Boolean) as MetarRunwayVisualRange[];
   const weather = operationalTokens.map(parseWeatherPhenomenon).filter(Boolean) as MetarWeatherPhenomenon[];
+  const recentWeather = operationalTokens.filter((token) => /^RE[-+]?[A-Z]{2,}$/.test(token));
+  const vicinityWeather = weather.filter((item) => item.intensity === "vicinity").map((item) => item.raw);
+  const windShear = operationalTokens.filter((token, index) => token === "WS" ? Boolean(operationalTokens[index + 1]?.startsWith("RWY")) : /^WS(RWY|ALL)/.test(token));
   const trend = operationalTokens.filter((token) => TREND_TOKENS.has(token) || /^FM\d{6}$/.test(token));
 
   return {
@@ -48,12 +51,16 @@ export function parseMetar(rawText: string): ParsedMetar {
     clouds,
     weatherCodes: weather.map((item) => item.raw),
     weather,
+    recentWeather,
+    vicinityWeather,
+    windShear,
     temperature,
     altimeter,
     runwayVisualRange,
     trend,
     remarks,
     flightCategory: deriveFlightCategory(visibility, clouds),
+    maintenanceIndicator: operationalTokens.includes("$"),
   };
 }
 
@@ -171,14 +178,17 @@ export function parseWeatherPhenomenon(token: string): MetarWeatherPhenomenon | 
   if (["CAVOK", "NSW", "NOSIG", "SKC", "CLR", "NSC", "NCD"].includes(token)) return undefined;
 
   const intensityToken = token.startsWith("-") || token.startsWith("+") ? token[0] : token.startsWith("VC") ? "VC" : undefined;
-  const body = intensityToken ? token.slice(intensityToken.length) : token;
+  const body = intensityToken && intensityToken !== "VC" ? token.slice(intensityToken.length) : token;
   if (!body || body.length % 2 !== 0 || !/^[A-Z]+$/.test(body)) return undefined;
 
   const descriptors: string[] = [];
   const phenomena: string[] = [];
   for (let i = 0; i < body.length; i += 2) {
     const code = body.slice(i, i + 2);
-    if (DESCRIPTOR_CODES.has(code)) descriptors.push(code);
+    if (DESCRIPTOR_CODES.has(code)) {
+      if (code === "TS" && i === body.length - 2) phenomena.push(code);
+      else descriptors.push(code);
+    }
     else if (PHENOMENA_CODES.has(code)) phenomena.push(code);
     else return undefined;
   }

@@ -54,6 +54,9 @@ export interface ParsedMetar {
   visibility?: MetarVisibility;
   weatherCodes: string[];
   weather: MetarWeatherPhenomenon[];
+  recentWeather: string[];
+  vicinityWeather: string[];
+  windShear: string[];
   clouds: MetarCloudLayer[];
   temperature?: MetarTemperature;
   altimeter?: MetarAltimeter;
@@ -61,6 +64,7 @@ export interface ParsedMetar {
   trend?: string[];
   remarks?: string;
   flightCategory?: FlightCategory;
+  maintenanceIndicator?: boolean;
 }
 
 export interface MetarExample {

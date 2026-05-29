@@ -15,7 +15,7 @@ function NavLink({ href, label, onClick }: { href: string; label: string; onClic
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const { t, language, setLanguage } = useLanguage();
-  const navItems = [{ href: "/", label: t("home") }, { href: "/onboarding", label: t("onboarding") }, { href: "/learn", label: t("learn") }, { href: "/decode", label: t("decode") }, { href: "/quiz", label: t("quiz") }, { href: "/time-attack", label: t("timeAttack") }, { href: "/real-weather", label: t("realWeather") }, { href: "/missions", label: t("missions") }, { href: "/progress", label: t("progress") }];
+  const navItems = [{ href: "/", label: t("home") }, { href: "/onboarding", label: t("onboarding") }, { href: "/learn", label: t("learn") }, { href: "/decode", label: t("decode") }, { href: "/quiz", label: t("quiz") }, { href: "/time-attack", label: t("timeAttack") }, { href: "/exam", label: t("exam") }, { href: "/real-weather", label: t("realWeather") }, { href: "/missions", label: t("missions") }, { href: "/leaderboard", label: t("leaderboard") }, { href: "/progress", label: t("progress") }];
 
   const toggleTheme = () => {
     const s = loadSettings();

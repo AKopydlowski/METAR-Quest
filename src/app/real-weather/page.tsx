@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import CockpitWeatherPanel from "@/components/metar/CockpitWeatherPanel";
 import PilotBriefingCard from "@/components/metar/PilotBriefingCard";
+import TafTimeline from "@/components/metar/TafTimeline";
 import { useLanguage } from "@/components/layout/LanguageProvider";
-import { parseTafTimeline } from "@/lib/metar/taf";
 import type { ParsedMetar } from "@/types/metar";
 
 interface ApiResponse {
@@ -64,7 +64,8 @@ export default function RealWeatherPage() {
   const [history, setHistory] = useState<string[]>(() => loadStringList(HISTORY_KEY));
   const [favorites, setFavorites] = useState<string[]>(() => loadStringList(FAVORITES_KEY));
   const [error, setError] = useState<string | null>(null);
-  const tafTimeline = useMemo(() => parseTafTimeline(data?.taf), [data?.taf]);
+  const [departureHour, setDepartureHour] = useState(12);
+  const [arrivalHour, setArrivalHour] = useState(14);
 
   const rememberStation = (code: string) => {
     const next = [code, ...history.filter((item) => item !== code)].slice(0, 8);
@@ -195,24 +196,23 @@ export default function RealWeatherPage() {
           </section>
 
           <section className="rounded-3xl border border-indigo-300/20 bg-indigo-500/10 p-5 shadow-xl">
-            <h2 className="text-xl font-bold">{pl ? "Oś czasu TAF" : "TAF timeline"}</h2>
-            {tafTimeline.length ? (
-              <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                {tafTimeline.map((segment) => (
-                  <article key={segment.id} className="rounded-2xl border border-white/10 bg-black/15 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-bold">{segment.label}</p>
-                      <span className={`rounded-full px-2 py-1 text-xs font-black ${segment.risk === "high" ? "bg-rose-500/20 text-rose-200" : segment.risk === "medium" ? "bg-amber-500/20 text-amber-200" : "bg-emerald-500/20 text-emerald-200"}`}>{segment.risk}</span>
-                    </div>
-                    <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">{segment.window}</p>
-                    <p className="mt-2 text-sm">{segment.summary}</p>
-                    <p className="mt-3 font-mono text-xs text-slate-400">{segment.raw}</p>
-                  </article>
-                ))}
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="text-xl font-bold">{pl ? "Oś czasu TAF" : "TAF timeline"}</h2>
+                <p className="mt-1 text-sm text-slate-400">{pl ? "Ustaw okno misji, aby zobaczyć ryzyko prognozowane dla lotu." : "Set a mission window to highlight forecast risk for the flight."}</p>
               </div>
-            ) : (
-              <p className="mt-2 text-sm">{pl ? "Brak TAF dla tej stacji." : "No TAF returned for this station."}</p>
-            )}
+              <div className="flex gap-2">
+                <label className="text-xs font-bold uppercase tracking-wide text-slate-400">DEP Z
+                  <input type="number" min={0} max={23} value={departureHour} onChange={(event) => setDepartureHour(Number(event.target.value))} className="mt-1 block w-20 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-white" />
+                </label>
+                <label className="text-xs font-bold uppercase tracking-wide text-slate-400">ARR Z
+                  <input type="number" min={0} max={23} value={arrivalHour} onChange={(event) => setArrivalHour(Number(event.target.value))} className="mt-1 block w-20 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-white" />
+                </label>
+              </div>
+            </div>
+            <div className="mt-4">
+              <TafTimeline taf={data.taf} language={language} departureHour={departureHour} arrivalHour={arrivalHour} />
+            </div>
           </section>
         </>
       )}
