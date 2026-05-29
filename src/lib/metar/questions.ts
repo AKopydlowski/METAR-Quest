@@ -2,6 +2,12 @@ import type { ParsedMetar } from "@/types/metar";
 import type { QuizChoice, QuizQuestion } from "@/types/quiz";
 import { metarExamples } from "./examples";
 
+type QuestionLanguage = "en" | "pl";
+
+function tx(language: QuestionLanguage, en: string, pl: string) {
+  return language === "pl" ? pl : en;
+}
+
 function buildChoices(correct: string, incorrect: string[], rationales: Record<string, string> = {}): QuizChoice[] {
   const deduped = [correct, ...incorrect].filter((label, index, arr) => arr.indexOf(label) === index);
   return deduped.slice(0, 4).map((label) => ({
@@ -29,11 +35,11 @@ function maybeQuestion(question: QuizQuestion | false | undefined): QuizQuestion
   return question ? [question] : [];
 }
 
-function buildQuestionsFromMetar(idPrefix: string, metarRaw: string, metar: ParsedMetar): QuizQuestion[] {
+function buildQuestionsFromMetar(idPrefix: string, metarRaw: string, metar: ParsedMetar, language: QuestionLanguage = "en"): QuizQuestion[] {
   return [
     ...maybeQuestion({
       id: `q-${idPrefix}-category`,
-      prompt: `Based on the METAR below, what is the flight category at ${metar.station}?`,
+      prompt: tx(language, `Based on the METAR below, what is the flight category at ${metar.station}?`, `Jaka jest kategoria lotu dla ${metar.station} na podstawie tego METAR?`),
       metar,
       metarRaw,
       difficulty: "easy",
@@ -44,7 +50,7 @@ function buildQuestionsFromMetar(idPrefix: string, metarRaw: string, metar: Pars
     }),
     ...maybeQuestion(metar.wind && {
       id: `q-${idPrefix}-wind`,
-      prompt: `From this METAR, what wind speed is reported for ${metar.station}?`,
+      prompt: tx(language, `From this METAR, what wind speed is reported for ${metar.station}?`, `Jaka prędkość wiatru jest raportowana dla ${metar.station}?`),
       metar,
       metarRaw,
       difficulty: "easy",
@@ -55,7 +61,7 @@ function buildQuestionsFromMetar(idPrefix: string, metarRaw: string, metar: Pars
     }),
     ...maybeQuestion(metar.visibility && {
       id: `q-${idPrefix}-vis`,
-      prompt: `Looking only at the METAR below, what visibility is reported at ${metar.station}?`,
+      prompt: tx(language, `Looking only at the METAR below, what visibility is reported at ${metar.station}?`, `Jaka widzialność jest raportowana dla ${metar.station}?`),
       metar,
       metarRaw,
       difficulty: "medium",
@@ -66,7 +72,7 @@ function buildQuestionsFromMetar(idPrefix: string, metarRaw: string, metar: Pars
     }),
     ...maybeQuestion({
       id: `q-${idPrefix}-ceiling`,
-      prompt: "What cloud/ceiling interpretation best matches this exact METAR string?",
+      prompt: tx(language, "What cloud/ceiling interpretation best matches this exact METAR string?", "Która interpretacja chmur/podstawy najlepiej pasuje do tego METAR?"),
       metar,
       metarRaw,
       difficulty: "medium",
@@ -77,7 +83,7 @@ function buildQuestionsFromMetar(idPrefix: string, metarRaw: string, metar: Pars
     }),
     ...maybeQuestion(metar.temperature && {
       id: `q-${idPrefix}-tempdew`,
-      prompt: `In this METAR, which temperature/dewpoint pair for ${metar.station} is correct?`,
+      prompt: tx(language, `In this METAR, which temperature/dewpoint pair for ${metar.station} is correct?`, `Która para temperatura/punkt rosy dla ${metar.station} jest poprawna?`),
       metar,
       metarRaw,
       difficulty: "hard",
@@ -88,7 +94,7 @@ function buildQuestionsFromMetar(idPrefix: string, metarRaw: string, metar: Pars
     }),
     ...maybeQuestion(metar.altimeter && {
       id: `q-${idPrefix}-altimeter`,
-      prompt: `Which altimeter/QNH value is reported for ${metar.station}?`,
+      prompt: tx(language, `Which altimeter/QNH value is reported for ${metar.station}?`, `Jaka wartość altimeter/QNH jest raportowana dla ${metar.station}?`),
       metar,
       metarRaw,
       difficulty: "medium",
@@ -99,7 +105,7 @@ function buildQuestionsFromMetar(idPrefix: string, metarRaw: string, metar: Pars
     }),
     ...maybeQuestion(metar.weather.length > 0 && {
       id: `q-${idPrefix}-weather`,
-      prompt: `Which present weather code appears in this METAR for ${metar.station}?`,
+      prompt: tx(language, `Which present weather code appears in this METAR for ${metar.station}?`, `Który kod pogody bieżącej występuje w METAR dla ${metar.station}?`),
       metar,
       metarRaw,
       difficulty: "hard",
@@ -111,10 +117,10 @@ function buildQuestionsFromMetar(idPrefix: string, metarRaw: string, metar: Pars
   ];
 }
 
-export function buildQuestionBank(): QuizQuestion[] {
-  return metarExamples.flatMap((example) => buildQuestionsFromMetar(example.id, example.rawText, example.parsed));
+export function buildQuestionBank(language: QuestionLanguage = "en"): QuizQuestion[] {
+  return metarExamples.flatMap((example) => buildQuestionsFromMetar(example.id, example.rawText, example.parsed, language));
 }
 
-export function buildDynamicQuestionBank(entries: Array<{ id: string; rawText: string; metar: ParsedMetar }>): QuizQuestion[] {
-  return entries.flatMap((entry) => buildQuestionsFromMetar(entry.id, entry.rawText, entry.metar));
+export function buildDynamicQuestionBank(entries: Array<{ id: string; rawText: string; metar: ParsedMetar }>, language: QuestionLanguage = "en"): QuizQuestion[] {
+  return entries.flatMap((entry) => buildQuestionsFromMetar(entry.id, entry.rawText, entry.metar, language));
 }

@@ -17,6 +17,8 @@ type ApiResponse = {
   error?: string;
 };
 
+const SCENARIO_STATIONS = ["EPWA", "EPKK", "KJFK", "EGLL", "KLAX", "EDDF"];
+
 const PROFILE_COPY: Record<MissionProfile, { en: string; pl: string; tolerance: PilotDecision[] }> = {
   "student-vfr": {
     en: "Student VFR solo: conservative decision-making, avoid marginal or instrument weather.",
@@ -54,6 +56,17 @@ export default function MissionsPage() {
 
   const assessment = useMemo(() => (decision ? evaluateDecision(profile, metar, decision) : null), [decision, metar, profile]);
   const profileCopy = PROFILE_COPY[profile][language];
+
+  const generateScenario = () => {
+    const next = metarExamples[Math.floor(Math.random() * metarExamples.length)];
+    const nextProfile = (["student-vfr", "ifr-brief", "night-cross-country"] as const)[Math.floor(Math.random() * 3)];
+    const nextStation = SCENARIO_STATIONS[Math.floor(Math.random() * SCENARIO_STATIONS.length)];
+    setMetar(next.parsed);
+    setProfile(nextProfile);
+    setStation(nextStation);
+    setDecision(null);
+    setError(null);
+  };
 
   const loadLiveMission = async () => {
     const normalized = station.trim().toUpperCase();
@@ -105,6 +118,7 @@ export default function MissionsPage() {
               <input value={station} maxLength={4} onChange={(event) => setStation(event.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} className="min-w-0 flex-1 rounded-xl border border-slate-600 bg-slate-950 px-3 py-3 font-mono text-white" placeholder="EPWA" />
               <button onClick={loadLiveMission} disabled={loading} className="rounded-xl bg-cyan-300 px-4 py-3 font-bold text-slate-950 disabled:opacity-60">{loading ? "..." : pl ? "Wczytaj" : "Load"}</button>
             </div>
+            <button onClick={generateScenario} type="button" className="mt-3 w-full rounded-xl border border-emerald-300/40 px-4 py-2 text-sm font-bold text-emerald-100 hover:bg-emerald-500/10">{pl ? "Wygeneruj scenariusz" : "Generate scenario"}</button>
             {error && <p className="mt-3 text-sm text-rose-300">{error}</p>}
           </div>
         </div>
@@ -133,9 +147,21 @@ export default function MissionsPage() {
             <p className="mt-2 text-sm text-slate-200">
               {pl ? "Decyzja instruktora:" : "Instructor call:"} <strong>{assessment.expected}</strong>. {pl ? "Token krytyczny:" : "Critical token:"} <strong className="font-mono">{assessment.briefing.keyToken}</strong>.
             </p>
-            <Link href="/quiz" className="mt-4 inline-flex rounded-xl bg-indigo-500 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-400">
-              {pl ? "Przećwicz podobne pytania" : "Practice similar questions"}
-            </Link>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {assessment.briefing.alerts.map((alert) => <p key={alert} className="rounded-xl border border-white/10 bg-black/15 p-3 text-sm">{alert}</p>)}
+            </div>
+            <div className="mt-4 rounded-xl border border-cyan-300/20 bg-cyan-400/10 p-4 text-sm">
+              <p className="font-bold">{pl ? "Review instruktora" : "Instructor review"}</p>
+              <p className="mt-2">{pl ? "Główne ryzyko" : "Primary risk"}: <strong>{assessment.briefing.primaryRisk}</strong></p>
+              <p>{pl ? "Trening" : "Training"}: <strong>{assessment.briefing.trainingFocus}</strong></p>
+              <p>{pl ? "Dla profilu" : "For profile"} <strong>{profileCopy}</strong></p>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href={`/quiz?skill=${encodeURIComponent(assessment.briefing.trainingFocus.includes("wind") ? "wind" : assessment.briefing.primaryRisk.includes("visibility") ? "visibility" : assessment.briefing.primaryRisk.includes("ceiling") ? "clouds" : "weather")}`} className="inline-flex rounded-xl bg-indigo-500 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-400">
+                {pl ? "Przećwicz podobne pytania" : "Practice similar questions"}
+              </Link>
+              <button onClick={generateScenario} className="rounded-xl border border-indigo-300/40 px-4 py-2 text-sm font-bold hover:bg-indigo-500/10">{pl ? "Kolejna misja" : "Next mission"}</button>
+            </div>
           </div>
         )}
       </section>

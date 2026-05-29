@@ -136,3 +136,19 @@ test('parseMetar: invalid groups resolve to null/empty', () => {
   assert.equal(parsed.temperature, undefined);
   assert.equal(parsed.altimeter, undefined);
 });
+
+test('parseMetar: handles SPECI AUTO P6SM and clear sky tokens', () => {
+  const parsed = parseMetar('SPECI KJFK 121651Z AUTO 18012KT P6SM CLR 18/16 A2992 RMK AO2');
+  assert.equal(parsed.reportType, 'SPECI');
+  assert.equal(parsed.station, 'KJFK');
+  assert.deepEqual(parsed.visibility, { statuteMiles: 6, raw: 'P6SM', modifier: 'P' });
+  assert.deepEqual(parsed.clouds, [{ coverage: 'CLR', baseFtAgl: undefined, cloudType: undefined }]);
+  assert.equal(parsed.remarks, 'AO2');
+});
+
+test('parseMetar: handles below-quarter visibility and vertical visibility', () => {
+  const parsed = parseMetar('KDEN 121651Z 02008KT M1/4SM FG VV002 01/00 A3001');
+  assert.deepEqual(parsed.visibility, { statuteMiles: 0.25, raw: 'M1/4SM', modifier: 'M' });
+  assert.deepEqual(parsed.clouds, [{ coverage: 'VV', baseFtAgl: 200, cloudType: undefined }]);
+  assert.equal(parsed.flightCategory, 'LIFR');
+});

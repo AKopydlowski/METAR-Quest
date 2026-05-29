@@ -10,20 +10,23 @@ import type {
   ParsedMetar,
 } from "@/types/metar";
 
-const CLOUD_RE = /^(SKC|CLR|FEW|SCT|BKN|OVC|VV|NCD)(\d{3}|\/\/\/)?(CB|TCU)?$/;
+const CLOUD_RE = /^(SKC|CLR|FEW|SCT|BKN|OVC|VV|NCD|NSC)(\d{3}|\/\/\/)?(CB|TCU)?$/;
 const OBS_TIME_RE = /^\d{6}Z$/;
 const VARIABLE_WIND_RE = /^(\d{3})V(\d{3})$/;
 const RVR_RE = /^R(\d{2}[LCR]?)[/](?:P|M)?(\d{4})(FT)?(?:[/]([UDN]))?$/;
-const TREND_TOKENS = new Set(["NOSIG", "NSW", "BECMG", "TEMPO"]);
+const TREND_TOKENS = new Set(["NOSIG", "NSW", "BECMG", "TEMPO", "PROB30", "PROB40", "FM", "TL", "AT"]);
 const DESCRIPTOR_CODES = new Set(["MI", "PR", "BC", "DR", "BL", "SH", "TS", "FZ"]);
 const PHENOMENA_CODES = new Set(["DZ", "RA", "SN", "SG", "IC", "PL", "GR", "GS", "UP", "BR", "FG", "FU", "VA", "DU", "SA", "HZ", "PY", "PO", "SQ", "FC", "SS", "DS"]);
+const REPORT_MODIFIERS = new Set(["AUTO", "COR", "CCA", "CCB", "NIL"]);
 
 export function parseMetar(rawText: string): ParsedMetar {
   const tokens = rawText.trim().split(/\s+/).filter(Boolean);
-  const station = tokens[0] ?? "XXXX";
-  const observedAt = OBS_TIME_RE.test(tokens[1] ?? "") ? tokens[1] : undefined;
+  const reportType = ["METAR", "SPECI"].includes(tokens[0]) ? tokens[0] as "METAR" | "SPECI" : "METAR";
+  const stationIndex = ["METAR", "SPECI"].includes(tokens[0]) ? 1 : 0;
+  const station = tokens[stationIndex] ?? "XXXX";
+  const observedAt = OBS_TIME_RE.test(tokens[stationIndex + 1] ?? "") ? tokens[stationIndex + 1] : undefined;
   const remarksIndex = tokens.indexOf("RMK");
-  const operationalTokens = remarksIndex >= 0 ? tokens.slice(0, remarksIndex) : tokens;
+  const operationalTokens = (remarksIndex >= 0 ? tokens.slice(0, remarksIndex) : tokens).filter((token) => !REPORT_MODIFIERS.has(token));
   const remarks = remarksIndex >= 0 ? tokens.slice(remarksIndex + 1).join(" ") : undefined;
 
   const wind = parseWindGroup(operationalTokens);
@@ -33,9 +36,10 @@ export function parseMetar(rawText: string): ParsedMetar {
   const altimeter = operationalTokens.map(parseAltimeter).find(Boolean) as MetarAltimeter | undefined;
   const runwayVisualRange = operationalTokens.map(parseRunwayVisualRange).filter(Boolean) as MetarRunwayVisualRange[];
   const weather = operationalTokens.map(parseWeatherPhenomenon).filter(Boolean) as MetarWeatherPhenomenon[];
-  const trend = operationalTokens.filter((token) => TREND_TOKENS.has(token));
+  const trend = operationalTokens.filter((token) => TREND_TOKENS.has(token) || /^FM\d{6}$/.test(token));
 
   return {
+    reportType,
     station,
     observedAt,
     rawText,
@@ -67,12 +71,15 @@ export function deriveFlightCategory(
 }
 
 export function parseWind(token: string): MetarWind | undefined {
-  const match = token.match(/^(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?KT$/);
+  const match = token.match(/^(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?(KT|MPS)$/);
   if (!match) return undefined;
+  const speed = Number(match[2]);
+  const gust = match[4] ? Number(match[4]) : undefined;
+  const factor = match[5] === "MPS" ? 1.94384 : 1;
   return {
     direction: match[1] === "VRB" ? null : Number(match[1]),
-    speedKt: Number(match[2]),
-    gustKt: match[4] ? Number(match[4]) : undefined,
+    speedKt: Math.round(speed * factor),
+    gustKt: gust ? Math.round(gust * factor) : undefined,
   };
 }
 
@@ -81,23 +88,26 @@ export function parseVisibility(token: string): MetarVisibility | undefined {
     return { statuteMiles: 6.2, raw: token, cavok: true };
   }
 
-  if (/^\d{4}$/.test(token)) {
-    const meters = Number(token);
+  if (/^P?\d{4}$/.test(token)) {
+    const clean = token.replace("P", "");
+    const meters = Number(clean);
     return {
-      statuteMiles: meters === 9999 ? 6.2 : Number((meters / 1609.34).toFixed(2)),
+      statuteMiles: meters === 9999 || token.startsWith("P") ? 6.2 : Number((meters / 1609.34).toFixed(2)),
       raw: token,
     };
   }
 
-  if (/^\d{1,2}SM$/.test(token)) {
-    return { statuteMiles: Number(token.replace("SM", "")), raw: token };
+  const whole = token.match(/^(P|M)?(\d{1,2})SM$/);
+  if (whole) {
+    return { statuteMiles: Number(whole[2]), raw: token, ...(whole[1] ? { modifier: whole[1] as MetarVisibility["modifier"] } : {}) };
   }
 
-  const fraction = token.match(/^(\d{1,2})\/(\d{1,2})SM$/);
+  const fraction = token.match(/^(P|M)?(\d{1,2})\/(\d{1,2})SM$/);
   if (fraction) {
     return {
-      statuteMiles: Number(fraction[1]) / Number(fraction[2]),
+      statuteMiles: Number(fraction[2]) / Number(fraction[3]),
       raw: token,
+      ...(fraction[1] ? { modifier: fraction[1] as MetarVisibility["modifier"] } : {}),
     };
   }
 
@@ -116,8 +126,8 @@ export function parseCloud(token: string): MetarCloudLayer | undefined {
 }
 
 export function parseTemperature(token: string): MetarTemperature | undefined {
-  const match = token.match(/^(M?\d{2})\/(M?\d{2})$/);
-  if (!match) return undefined;
+  const match = token.match(/^(M?\d{2}|\/\/)\/(M?\d{2}|\/\/)$/);
+  if (!match || match[1] === "//" || match[2] === "//") return undefined;
 
   return {
     celsius: parseSignedTemp(match[1]),
@@ -158,7 +168,7 @@ export function parseRunwayVisualRange(token: string): MetarRunwayVisualRange | 
 }
 
 export function parseWeatherPhenomenon(token: string): MetarWeatherPhenomenon | undefined {
-  if (["CAVOK", "NSW", "NOSIG"].includes(token)) return undefined;
+  if (["CAVOK", "NSW", "NOSIG", "SKC", "CLR", "NSC", "NCD"].includes(token)) return undefined;
 
   const intensityToken = token.startsWith("-") || token.startsWith("+") ? token[0] : token.startsWith("VC") ? "VC" : undefined;
   const body = intensityToken ? token.slice(intensityToken.length) : token;
@@ -201,11 +211,12 @@ function parseVisibilityGroup(tokens: string[]): MetarVisibility | undefined {
   if (cavok) return parseVisibility(cavok);
 
   for (let i = 0; i < tokens.length; i += 1) {
-    const mixed = tokens[i + 1]?.match(/^(\d{1,2})\/(\d{1,2})SM$/);
+    const mixed = tokens[i + 1]?.match(/^(P|M)?(\d{1,2})\/(\d{1,2})SM$/);
     if (/^\d{1,2}$/.test(tokens[i]) && mixed) {
       return {
-        statuteMiles: Number(tokens[i]) + Number(mixed[1]) / Number(mixed[2]),
+        statuteMiles: Number(tokens[i]) + Number(mixed[2]) / Number(mixed[3]),
         raw: `${tokens[i]} ${tokens[i + 1]}`,
+        ...(mixed[1] ? { modifier: mixed[1] as MetarVisibility["modifier"] } : {}),
       };
     }
 

@@ -1,10 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
   title: "METAR Quest — Pilot Weather Trainer",
   description: "Interactive METAR decoder, live weather briefing and aviation weather mission trainer.",
+  manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#06b6d4",
 };
 
 export default function RootLayout({
