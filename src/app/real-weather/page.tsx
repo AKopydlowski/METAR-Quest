@@ -16,6 +16,7 @@ interface ApiResponse {
 
 const HISTORY_KEY = "metar-quest:weather-history";
 const FAVORITES_KEY = "metar-quest:favorite-stations";
+const WEATHER_CACHE_KEY = "metar-quest:last-weather:";
 const QUICK_STATIONS = ["EPWA", "EPKK", "EPPO", "EPGD", "EPWR", "KJFK", "EGLL"];
 const AIRPORTS = [
   { code: "EPWA", city: "Warsaw", x: 54, y: 42 },
@@ -26,6 +27,22 @@ const AIRPORTS = [
   { code: "KJFK", city: "New York", x: 16, y: 54 },
   { code: "EGLL", city: "London", x: 43, y: 50 },
 ];
+
+function loadCachedWeather(station: string): ApiResponse | null {
+  if (typeof window === "undefined") return null;
+  const saved = window.localStorage.getItem(`${WEATHER_CACHE_KEY}${station}`);
+  if (!saved) return null;
+  try {
+    return JSON.parse(saved) as ApiResponse;
+  } catch {
+    return null;
+  }
+}
+
+function observationLabel(observedAt?: string) {
+  if (!observedAt) return "Observation time unknown";
+  return `Observed ${observedAt.slice(0, 2)} day at ${observedAt.slice(2, 4)}:${observedAt.slice(4, 6)}Z`;
+}
 
 function loadStringList(key: string): string[] {
   if (typeof window === "undefined") return [];
@@ -78,9 +95,18 @@ export default function RealWeatherPage() {
       const payload = (await response.json()) as ApiResponse;
       setData(payload);
       if (payload.error) setError(payload.error);
-      else rememberStation(normalized);
+      else {
+        rememberStation(normalized);
+        window.localStorage.setItem(`${WEATHER_CACHE_KEY}${normalized}`, JSON.stringify(payload));
+      }
     } catch {
-      setError(pl ? "Nie udało się pobrać pogody. Spróbuj ponownie." : "Could not load weather. Try again.");
+      const cached = loadCachedWeather(normalized);
+      if (cached?.metar) {
+        setData(cached);
+        setError(pl ? "Pokazuję ostatni zapisany raport — live API jest niedostępne." : "Showing last saved report — live API is unavailable.");
+      } else {
+        setError(pl ? "Nie udało się pobrać pogody. Spróbuj ponownie." : "Could not load weather. Try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -157,6 +183,7 @@ export default function RealWeatherPage() {
           <PilotBriefingCard metar={data.metar} language={language} />
           <section className="rounded-3xl border border-zinc-300/20 bg-[var(--surface)]/90 p-5 shadow-xl">
             <p><strong>Raw:</strong> <span className="font-mono text-sm">{data.metar.rawText}</span></p>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">{observationLabel(data.metar.observedAt)} • educational briefing, not operational dispatch.</p>
             <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
               <p><strong>Category:</strong> {data.metar.flightCategory ?? "Unknown"}</p>
               <p><strong>Visibility:</strong> {data.metar.visibility?.raw ?? "?"} ({data.metar.visibility?.statuteMiles ?? "?"} SM)</p>

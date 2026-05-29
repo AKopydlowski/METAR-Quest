@@ -31,8 +31,11 @@ export default function Home() {
                 {pl ? "METAR Quest łączy quiz, live weather, kokpitowy briefing i misje GO/NO-GO, żeby nauka wyglądała jak prawdziwy briefing przed lotem." : "METAR Quest blends quiz training, live weather, cockpit briefing and GO/NO-GO missions so learning feels like a real preflight briefing."}
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/missions" className="inline-flex items-center justify-center rounded-xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
-                  {pl ? "Uruchom Live Mission" : "Launch Live Mission"}
+                <Link href="/onboarding" className="inline-flex items-center justify-center rounded-xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
+                  {pl ? "Ułóż plan treningu" : "Build training plan"}
+                </Link>
+                <Link href="/missions" className="inline-flex items-center justify-center rounded-xl border border-cyan-300/60 bg-cyan-300/10 px-6 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20">
+                  {pl ? "Daily Live Mission" : "Daily Live Mission"}
                 </Link>
                 <Link href="/decode" className="inline-flex items-center justify-center rounded-xl border border-slate-500 bg-slate-900/70 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-sky-300 hover:text-sky-200">
                   {t("startDecoding")}

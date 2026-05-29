@@ -8,10 +8,21 @@ export interface AviationWeatherClient {
 
 const METAR_URL = "https://aviationweather.gov/api/data/metar";
 const TAF_URL = "https://aviationweather.gov/api/data/taf";
+const REQUEST_TIMEOUT_MS = 8000;
+
+async function fetchWithTimeout(url: string): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { next: { revalidate: 60 }, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export async function getLatestMetar(station: string): Promise<ParsedMetar> {
   const url = `${METAR_URL}?ids=${encodeURIComponent(station)}&format=raw&taf=false`;
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await fetchWithTimeout(url);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch METAR for ${station}: ${response.status}`);
@@ -27,7 +38,7 @@ export async function getLatestMetar(station: string): Promise<ParsedMetar> {
 
 export async function getLatestTaf(station: string): Promise<string | null> {
   const url = `${TAF_URL}?ids=${encodeURIComponent(station)}&format=raw`;
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await fetchWithTimeout(url);
   if (!response.ok) return null;
 
   const raw = (await response.text()).trim();
