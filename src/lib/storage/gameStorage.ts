@@ -38,7 +38,7 @@ export function saveSettings(settings: GameSettings): void {
   window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
-export function saveLeaderboardEntry(mode: "quiz" | "time-attack", score: number): void {
+export function saveLeaderboardEntry(mode: "quiz" | "time-attack" | "mission" | "exam", score: number): void {
   if (typeof window === "undefined") return;
   const raw = window.localStorage.getItem(LEADERBOARD_KEY);
   const current = raw ? (JSON.parse(raw) as { mode: string; score: number; at: string }[]) : [];

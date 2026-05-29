@@ -152,3 +152,11 @@ test('parseMetar: handles below-quarter visibility and vertical visibility', () 
   assert.deepEqual(parsed.clouds, [{ coverage: 'VV', baseFtAgl: 200, cloudType: undefined }]);
   assert.equal(parsed.flightCategory, 'LIFR');
 });
+
+test('parseMetar: handles vicinity, recent weather, wind shear and maintenance indicator', () => {
+  const parsed = parseMetar('METAR KORD 121651Z 24018G30KT 3SM VCTS BKN020 18/16 A2992 WS RWY27 RE+RA $ RMK AO2');
+  assert.deepEqual(parsed.vicinityWeather, ['VCTS']);
+  assert.deepEqual(parsed.recentWeather, ['RE+RA']);
+  assert.deepEqual(parsed.windShear, ['WS']);
+  assert.equal(parsed.maintenanceIndicator, true);
+});

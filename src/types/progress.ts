@@ -3,6 +3,10 @@ export interface SkillProgress {
   correct: number;
   incorrect: number;
   streak: number;
+  attempts?: number;
+  lastAnsweredAt?: string;
+  nextReviewAt?: string;
+  ease?: number;
 }
 
 export interface UserProgress {
@@ -20,4 +24,4 @@ export interface ProgressSnapshot {
   completedAt: string;
 }
 
-export type ProgressMode = "quiz" | "time-attack";
+export type ProgressMode = "quiz" | "time-attack" | "mission" | "exam";

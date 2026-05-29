@@ -60,6 +60,8 @@ const translations: Record<Language, Dict> = {
     duration: "Duration",
     weakAreas: "Weak areas",
     recommendedPractice: "Recommended practice",
+    exam: "Exam",
+    leaderboard: "Leaderboard",
   },
   pl: {
     appName: "METAR Quest",
@@ -114,6 +116,8 @@ const translations: Record<Language, Dict> = {
     duration: "Czas rundy",
     weakAreas: "Słabsze obszary",
     recommendedPractice: "Rekomendowany trening",
+    exam: "Egzamin",
+    leaderboard: "Ranking",
   },
 };
 

@@ -1,17 +1,7 @@
 import Link from "next/link";
 import { metarExamples } from "@/lib/metar/examples";
 import { metarGlossary } from "@/lib/metar/glossary";
-
-const MODULES = [
-  { id: "station-time", title: "Station + time", skill: "scan", goal: "Find the ICAO identifier and UTC observation timestamp before reading risk." },
-  { id: "wind", title: "Wind", skill: "wind", goal: "Read direction, steady speed, variable sector and gust spread." },
-  { id: "visibility", title: "Visibility", skill: "visibility", goal: "Convert meters, statute miles, CAVOK and RVR into operational visibility." },
-  { id: "clouds", title: "Ceiling/clouds", skill: "clouds", goal: "Identify BKN/OVC/VV ceilings and convective cloud flags." },
-  { id: "weather", title: "Present weather", skill: "weather", goal: "Spot TS, FG, FZ, SN, RA and other mission-changing weather groups." },
-  { id: "altimeter", title: "Altimeter/QNH", skill: "altimeter", goal: "Read Q and A groups correctly for cockpit setup." },
-  { id: "taf", title: "TAF trends", skill: "weather", goal: "Use TEMPO, BECMG and PROB groups to brief what can change next." },
-  { id: "decision", title: "GO / CAUTION / NO-GO", skill: "clouds", goal: "Turn METAR tokens into a conservative pilot decision." },
-];
+import { learnModules } from "@/content/learnModules";
 
 export default function LearnPage() {
   return (
@@ -25,9 +15,9 @@ export default function LearnPage() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {MODULES.map((module, index) => (
+        {learnModules.map((module, index) => (
           <article key={module.id} className="rounded-3xl border border-sky-300/20 bg-[var(--surface)]/90 p-5 shadow-xl">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">Module {index + 1}</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">Module {index + 1} • {module.level}</p>
             <h2 className="mt-2 text-xl font-bold">{module.title}</h2>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">{module.goal}</p>
             <div className="mt-4 flex flex-wrap gap-2">

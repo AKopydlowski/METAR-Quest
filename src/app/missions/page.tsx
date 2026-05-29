@@ -4,15 +4,19 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import CockpitWeatherPanel from "@/components/metar/CockpitWeatherPanel";
 import PilotBriefingCard from "@/components/metar/PilotBriefingCard";
+import TafTimeline from "@/components/metar/TafTimeline";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { buildPilotBriefing } from "@/lib/metar/briefing";
 import { metarExamples } from "@/lib/metar/examples";
 import { assessWeatherDecision } from "@/lib/decision/decisionEngine";
+import { recordProgressAnswer } from "@/lib/storage/progressStorage";
+import { saveLeaderboardEntry } from "@/lib/storage/gameStorage";
 import { PILOT_PROFILES, PROFILE_IDS, type MissionProfile, type PilotDecision } from "@/lib/decision/profiles";
 import type { ParsedMetar } from "@/types/metar";
 
 type ApiResponse = {
   metar?: ParsedMetar;
+  taf?: string | null;
   error?: string;
 };
 
@@ -28,13 +32,19 @@ export default function MissionsPage() {
   const pl = language === "pl";
   const [profile, setProfile] = useState<MissionProfile>("student-vfr");
   const [station, setStation] = useState("EPWA");
+  const [alternateStation, setAlternateStation] = useState("EPKK");
   const [metar, setMetar] = useState<ParsedMetar>(metarExamples[1].parsed);
+  const [taf, setTaf] = useState<string | null>(null);
+  const [alternateMetar, setAlternateMetar] = useState<ParsedMetar | null>(null);
+  const [departureHour, setDepartureHour] = useState(12);
+  const [arrivalHour, setArrivalHour] = useState(14);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [decision, setDecision] = useState<PilotDecision | null>(null);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
 
   const assessment = useMemo(() => (decision ? assessWeatherDecision(profile, metar, decision) : null), [decision, metar, profile]);
+  const alternateAssessment = useMemo(() => (alternateMetar ? assessWeatherDecision(profile, alternateMetar) : null), [alternateMetar, profile]);
   const profileCopy = PILOT_PROFILES[profile][language];
   const briefing = useMemo(() => buildPilotBriefing(metar), [metar]);
 
@@ -46,6 +56,8 @@ export default function MissionsPage() {
     setProfile(nextProfile);
     setStation(nextStation);
     setDecision(null);
+    setTaf(null);
+    setAlternateMetar(null);
     setError(null);
     setShareStatus(null);
   };
@@ -57,6 +69,8 @@ export default function MissionsPage() {
     setProfile(nextProfile);
     setStation(next.parsed.station);
     setDecision(null);
+    setTaf(null);
+    setAlternateMetar(null);
     setError(null);
     setShareStatus(null);
   };
@@ -73,11 +87,19 @@ export default function MissionsPage() {
     setDecision(null);
     setShareStatus(null);
     try {
-      const response = await fetch(`/api/weather/metar?station=${encodeURIComponent(normalized)}`);
+      const response = await fetch(`/api/weather/metar?station=${encodeURIComponent(normalized)}&taf=true`);
       const payload = (await response.json()) as ApiResponse;
       if (!response.ok || payload.error || !payload.metar) throw new Error(payload.error ?? "No METAR returned");
       setMetar(payload.metar);
+      setTaf(payload.taf ?? null);
       setStation(normalized);
+
+      const alternate = alternateStation.trim().toUpperCase();
+      if (/^[A-Z]{4}$/.test(alternate)) {
+        const alternateResponse = await fetch(`/api/weather/metar?station=${encodeURIComponent(alternate)}`);
+        const alternatePayload = (await alternateResponse.json()) as ApiResponse;
+        setAlternateMetar(alternateResponse.ok && alternatePayload.metar ? alternatePayload.metar : null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : pl ? "Nie udało się pobrać misji." : "Could not load mission.");
     } finally {
@@ -118,9 +140,14 @@ export default function MissionsPage() {
               {PROFILE_IDS.map((id) => <option key={id} value={id}>{PILOT_PROFILES[id].label}</option>)}
             </select>
             <p className="mt-3 text-sm text-slate-300">{profileCopy}</p>
-            <div className="mt-4 flex gap-2">
-              <input value={station} maxLength={4} onChange={(event) => setStation(event.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} className="min-w-0 flex-1 rounded-xl border border-slate-600 bg-slate-950 px-3 py-3 font-mono text-white" placeholder="EPWA" />
+            <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+              <input value={station} maxLength={4} onChange={(event) => setStation(event.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} className="min-w-0 rounded-xl border border-slate-600 bg-slate-950 px-3 py-3 font-mono text-white" placeholder="DEST EPWA" />
+              <input value={alternateStation} maxLength={4} onChange={(event) => setAlternateStation(event.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} className="min-w-0 rounded-xl border border-slate-600 bg-slate-950 px-3 py-3 font-mono text-white" placeholder="ALT EPKK" />
               <button onClick={loadLiveMission} disabled={loading} className="rounded-xl bg-cyan-300 px-4 py-3 font-bold text-slate-950 disabled:opacity-60">{loading ? "..." : pl ? "Wczytaj" : "Load"}</button>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <label className="text-xs font-bold uppercase tracking-wide text-slate-400">DEP Z<input type="number" min={0} max={23} value={departureHour} onChange={(event) => setDepartureHour(Number(event.target.value))} className="mt-1 block w-20 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-white" /></label>
+              <label className="text-xs font-bold uppercase tracking-wide text-slate-400">ARR Z<input type="number" min={0} max={23} value={arrivalHour} onChange={(event) => setArrivalHour(Number(event.target.value))} className="mt-1 block w-20 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-white" /></label>
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <button onClick={loadDailyMission} type="button" className="rounded-xl border border-cyan-300/40 px-4 py-2 text-sm font-bold text-cyan-100 hover:bg-cyan-500/10">{pl ? "Daily Mission" : "Daily Mission"}</button>
@@ -134,6 +161,24 @@ export default function MissionsPage() {
       <CockpitWeatherPanel metar={metar} language={language} />
       <PilotBriefingCard metar={metar} language={language} />
 
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-3xl border border-cyan-300/20 bg-cyan-500/10 p-5 shadow-xl">
+          <h2 className="text-xl font-bold">{pl ? "TAF dla okna misji" : "TAF for mission window"}</h2>
+          <div className="mt-4"><TafTimeline taf={taf} language={language} departureHour={departureHour} arrivalHour={arrivalHour} /></div>
+        </div>
+        <div className="rounded-3xl border border-emerald-300/20 bg-emerald-500/10 p-5 shadow-xl">
+          <h2 className="text-xl font-bold">{pl ? "Plan B / alternate" : "Plan B / alternate"}</h2>
+          {alternateMetar && alternateAssessment ? (
+            <div className="mt-3 space-y-3 text-sm">
+              <p className="font-mono">{alternateMetar.rawText}</p>
+              <p>{pl ? "Decyzja dla alternate:" : "Alternate call:"} <strong>{alternateAssessment.expected}</strong></p>
+              <p>{alternateAssessment.primaryRisk}</p>
+              <p className="rounded-xl border border-white/10 bg-black/15 p-3">{alternateAssessment.expected === "GO" ? (pl ? "Alternate wygląda lepiej niż lotnisko docelowe, ale sprawdź paliwo i minima." : "Alternate currently looks usable; still verify fuel and minima.") : (pl ? "Alternate nie jest mocnym planem B — znajdź lepsze lotnisko." : "Alternate is not a strong Plan B — choose a better airport.")}</p>
+            </div>
+          ) : <p className="mt-3 text-sm text-slate-400">{pl ? "Wczytaj misję live z kodem alternate, aby porównać ryzyko." : "Load a live mission with an alternate code to compare risk."}</p>}
+        </div>
+      </section>
+
       <section className="rounded-3xl border border-indigo-300/20 bg-[var(--surface)]/90 p-6 shadow-xl">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -144,7 +189,7 @@ export default function MissionsPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             {(["GO", "CAUTION", "NO-GO"] as const).map((item) => (
-              <button key={item} onClick={() => setDecision(item)} className={`rounded-2xl px-5 py-3 font-black transition ${decision === item ? "bg-cyan-300 text-slate-950" : "border border-slate-600 bg-slate-900/60 text-white hover:border-cyan-300"}`}>{item}</button>
+              <button key={item} onClick={() => { setDecision(item); const result = assessWeatherDecision(profile, metar, item); recordProgressAnswer("local-user", "mission", result.trainingFocus, result.match); saveLeaderboardEntry("mission", result.score); }} className={`rounded-2xl px-5 py-3 font-black transition ${decision === item ? "bg-cyan-300 text-slate-950" : "border border-slate-600 bg-slate-900/60 text-white hover:border-cyan-300"}`}>{item}</button>
             ))}
           </div>
         </div>
