@@ -36,7 +36,7 @@ export type HistoricalWeatherScenario = {
   id: string;
   title: string;
   region: string;
-  difficulty: "starter" | "pro" | "checkride";
+  difficulty: "podstawy" | "pro" | "sprawdzenie";
   briefingGoal: string;
   teachingPoint: string;
   route: string;
@@ -46,12 +46,13 @@ export type HistoricalWeatherScenario = {
 export type CertificationTrack = {
   id: string;
   title: string;
-  level: "bronze" | "silver" | "gold" | "black";
+  level: "brąz" | "srebro" | "złoto" | "czarny";
   requirements: string[];
   unlocks: string;
 };
 
 const DECISION_WEIGHT: Record<PilotDecision, number> = { GO: 1, CAUTION: 2, "NO-GO": 3 };
+const ROLE_LABELS: Record<BriefingLeg["role"], string> = { departure: "odlot", destination: "cel", alternate: "zapasowe" };
 
 export function normalizeRunwayHeading(runway: string): number | null {
   const match = runway.trim().toUpperCase().match(/^(?:RWY\s*)?(\d{1,2})([LCR])?$/);
@@ -95,7 +96,7 @@ export function calculateCrosswindAssessment(metar: ParsedMetar, runway: string,
       component: "calm-variable",
       limitKt,
       status: metar.wind.gustKt && metar.wind.gustKt > profile.minima.maxWindKt ? "CAUTION" : "GO",
-      explanation: "Wind is calm or variable, so runway-specific components need local tower/ATIS confirmation.",
+      explanation: "Wiatr jest spokojny albo zmienny — składowe dla pasa trzeba potwierdzić lokalnie przez TWR/ATIS.",
     };
   }
 
@@ -119,10 +120,10 @@ export function calculateCrosswindAssessment(metar: ParsedMetar, runway: string,
     status,
     explanation:
       status === "GO"
-        ? "Runway component is inside the profile training limit; keep monitoring gusts and runway changes."
+        ? "Składowa wiatru mieści się w limicie profilu; nadal monitoruj porywy i zmianę pasa."
         : status === "CAUTION"
-          ? "Crosswind is above the comfort band; brief technique, instructor limits and alternate runway options."
-          : "Tailwind or excessive crosswind makes this a stop/go decision for the selected profile.",
+          ? "Wiatr boczny przekracza komfortowy zakres; omów technikę, limity instruktora i alternatywne pasy."
+          : "Tylny wiatr albo zbyt duży wiatr boczny blokuje decyzję dla wybranego profilu.",
   };
 }
 
@@ -137,32 +138,32 @@ export function buildInstructorBriefing(legs: BriefingLeg[], crosswindAssessment
   const riskLegs = legs.filter((leg) => leg.assessment.expected !== "GO");
   const primary = riskLegs[0] ?? legs[0];
   const crosswindLine = crosswindAssessment
-    ? `Runway ${crosswindAssessment.runwayHeading.toString().padStart(3, "0")}°: ${crosswindAssessment.crosswindKt} kt crosswind${crosswindAssessment.gustCrosswindKt ? `, ${crosswindAssessment.gustCrosswindKt} kt in gusts` : ""}.`
-    : "Runway component not calculated yet.";
+    ? `Pas ${crosswindAssessment.runwayHeading.toString().padStart(3, "0")}°: ${crosswindAssessment.crosswindKt} kt wiatru bocznego${crosswindAssessment.gustCrosswindKt ? `, ${crosswindAssessment.gustCrosswindKt} kt w porywach` : ""}.`
+    : "Składowa pasa nie została jeszcze obliczona.";
 
   return {
     overallDecision,
     headline:
       overallDecision === "GO"
-        ? "Instructor scan: no stopper detected, but complete the normal wind–visibility–ceiling–trend check."
-        : `Instructor scan: ${primary.role} ${primary.station} drives a ${overallDecision} because of ${primary.assessment.primaryRisk}`,
+        ? "Skan instruktora: brak blokady, ale wykonaj pełne sprawdzenie wiatru, widzialności, podstawy i trendu."
+        : `Skan instruktora: odcinek ${ROLE_LABELS[primary.role]} ${primary.station} prowadzi do decyzji ${overallDecision}, ponieważ: ${primary.assessment.primaryRisk}`,
     scanOrder: [
-      "1. Start with report age, station and flight category before reading isolated tokens.",
-      "2. Compare visibility and ceiling against the selected pilot profile minima.",
-      "3. Brief wind, gust spread and runway component before committing to launch.",
-      "4. Read TAF trend/TEMPO/PROB groups across the mission window, not just the current METAR.",
-      "5. Verify alternate weather is genuinely better than the destination risk.",
+      "1. Zacznij od wieku raportu, stacji i kategorii lotu, zanim wejdziesz w pojedyncze tokeny.",
+      "2. Porównaj widzialność i podstawę z minimami wybranego profilu pilota.",
+      "3. Omów wiatr, różnicę porywów i składową pasa przed decyzją o odlocie.",
+      "4. Czytaj trendy TAF/TEMPO/PROB w całym oknie misji, nie tylko bieżący METAR.",
+      "5. Sprawdź, czy lotnisko zapasowe naprawdę ma niższe ryzyko niż docelowe.",
     ],
     missedItems: [
-      ...riskLegs.slice(0, 3).map((leg) => `${leg.role} ${leg.station}: ${leg.assessment.keyToken} — ${leg.assessment.primaryRisk}`),
+      ...riskLegs.slice(0, 3).map((leg) => `${ROLE_LABELS[leg.role]} ${leg.station}: ${leg.assessment.keyToken} — ${leg.assessment.primaryRisk}`),
       crosswindLine,
     ],
     nextActions:
       overallDecision === "NO-GO"
-        ? ["Delay, choose a better alternate, or switch to an instructor/IFR-approved plan.", "Re-run the briefing after the next METAR/TAF update."]
+        ? ["Opóźnij lot, wybierz lepsze zapasowe albo przejdź na plan zatwierdzony przez instruktora/IFR.", "Powtórz briefing po kolejnej aktualizacji METAR/TAF."]
         : overallDecision === "CAUTION"
-          ? ["Set personal minimum triggers before taxi.", "Prepare diversion gates and compare a second alternate."]
-          : ["Keep monitoring trend groups and runway changes.", "Use the mission as a spaced-review repetition for the weakest token."],
+          ? ["Ustal osobiste minima i warunki przerwania przed kołowaniem.", "Przygotuj punkty decyzji o zmianie trasy i porównaj drugie lotnisko zapasowe."]
+          : ["Monitoruj grupy trendu i ewentualne zmiany pasa.", "Potraktuj misję jako powtórkę rozłożoną w czasie dla najsłabszego tokenu."],
   };
 }
 
@@ -178,12 +179,12 @@ export function buildBriefingLeg(role: BriefingLeg["role"], metar: ParsedMetar, 
 export const historicalWeatherScenarios: HistoricalWeatherScenario[] = [
   {
     id: "marine-layer-lift",
-    title: "Marine layer that almost lifts",
-    region: "Pacific coast",
-    difficulty: "starter",
+    title: "Warstwa morska, która prawie się podnosi",
+    region: "Wybrzeże Pacyfiku",
+    difficulty: "podstawy",
     route: "KSFO → KOAK",
-    briefingGoal: "Decide whether a student VFR local flight can launch before the ceiling improves.",
-    teachingPoint: "MVFR ceilings can look tempting, but student minima should drive the call until the trend is confirmed.",
+    briefingGoal: "Zdecyduj, czy uczeń VFR może wystartować lokalnie, zanim poprawi się podstawa.",
+    teachingPoint: "Podstawy MVFR mogą wyglądać kusząco, ale do potwierdzenia trendu decydują minima ucznia.",
     timeline: [
       { time: "16:56Z", raw: "KSFO 201656Z 27010KT 5SM BKN018 14/11 A3005", expected: "NO-GO" },
       { time: "17:56Z", raw: "KSFO 201756Z 28012KT 7SM BKN025 15/11 A3006", expected: "CAUTION" },
@@ -192,12 +193,12 @@ export const historicalWeatherScenarios: HistoricalWeatherScenario[] = [
   },
   {
     id: "tempo-thunder",
-    title: "TEMPO thunderstorm trap",
-    region: "Northeast US",
+    title: "Pułapka burzowa TEMPO",
+    region: "Północny wschód USA",
     difficulty: "pro",
     route: "KJFK → KPHL",
-    briefingGoal: "Catch the convective risk before accepting a current VFR gap.",
-    teachingPoint: "A current report can be flyable while the mission window is dominated by TSRA/TEMPO risk.",
+    briefingGoal: "Wychwyć ryzyko konwekcyjne, zanim zaakceptujesz chwilowe okno VFR.",
+    teachingPoint: "Bieżący raport może wyglądać lotnie, gdy całe okno misji dominuje ryzyko TSRA/TEMPO.",
     timeline: [
       { time: "15:51Z", raw: "KJFK 121551Z 17010KT 6SM SCT025 BKN050 19/16 A2994", expected: "CAUTION" },
       { time: "16:51Z", raw: "KJFK 121651Z 18012G22KT 150V220 1 1/2SM R04R/1200FT/D TSRA BR BKN008CB 18/16 A2992 TEMPO RMK AO2", expected: "NO-GO" },
@@ -206,12 +207,12 @@ export const historicalWeatherScenarios: HistoricalWeatherScenario[] = [
   },
   {
     id: "night-br",
-    title: "Night visibility erosion",
-    region: "Central Europe",
-    difficulty: "checkride",
+    title: "Nocne pogarszanie widzialności",
+    region: "Europa Środkowa",
+    difficulty: "sprawdzenie",
     route: "EPWA → EPKK alternate EPPO",
-    briefingGoal: "Protect night VFR minima when mist starts reducing visual references.",
-    teachingPoint: "BR at night is not a cosmetic token; it can move a VFR trip into a conservative CAUTION/NO-GO plan.",
+    briefingGoal: "Chroń minima nocnego VFR, gdy zamglenie zaczyna ograniczać odniesienia wzrokowe.",
+    teachingPoint: "BR nocą nie jest kosmetycznym tokenem; może przesunąć lot VFR do konserwatywnego planu CAUTION/NO-GO.",
     timeline: [
       { time: "19:00Z", raw: "EPWA 281900Z 09006KT 8000 NSC 12/10 Q1018 NOSIG", expected: "CAUTION" },
       { time: "20:00Z", raw: "EPWA 282000Z 08005KT 5000 BR SCT012 11/10 Q1018", expected: "NO-GO" },
@@ -223,31 +224,31 @@ export const historicalWeatherScenarios: HistoricalWeatherScenario[] = [
 export const certificationTracks: CertificationTrack[] = [
   {
     id: "metar-basics",
-    title: "METAR Basics Certificate",
-    level: "bronze",
-    requirements: ["90% on station/time, wind, visibility and QNH drills", "Decode 10 raw METAR reports without hints", "Explain one CAVOK and one RVR example"],
-    unlocks: "Daily briefing streaks and bronze share card",
+    title: "Certyfikat podstaw METAR",
+    level: "brąz",
+    requirements: ["90% w ćwiczeniach stacji/czasu, wiatru, widzialności i QNH", "Rozkoduj 10 surowych raportów METAR bez podpowiedzi", "Wyjaśnij po jednym przykładzie CAVOK i RVR"],
+    unlocks: "Serie codziennych briefingów i brązowa karta wyniku",
   },
   {
     id: "taf-mission",
-    title: "TAF Mission Planner",
-    level: "silver",
-    requirements: ["Correctly classify TEMPO, BECMG, FM and PROB groups", "Complete 5 mission-window TAF timelines", "Identify the highest-risk segment before launch"],
-    unlocks: "Replay weather scenarios and silver timeline badge",
+    title: "Planer misji TAF",
+    level: "srebro",
+    requirements: ["Poprawnie klasyfikuj grupy TEMPO, BECMG, FM i PROB", "Ukończ 5 osi TAF dla okna misji", "Wskaż segment najwyższego ryzyka przed odlotem"],
+    unlocks: "Scenariusze odtworzenia pogody i srebrna odznaka osi czasu",
   },
   {
     id: "vfr-decision",
-    title: "VFR Weather Decision Checkride",
-    level: "gold",
-    requirements: ["Pass a 20-question no-hints checkride at 85%", "Make 5 consecutive correct GO/CAUTION/NO-GO calls", "Brief departure, destination and alternate risks"],
-    unlocks: "Gold checkride report and instructor debrief mode",
+    title: "Sprawdzenie decyzji pogodowych VFR",
+    level: "złoto",
+    requirements: ["Zdaj 20-pytaniowe sprawdzenie bez podpowiedzi na 85%", "Podejmij 5 poprawnych decyzji GO/CAUTION/NO-GO z rzędu", "Omów ryzyko odlotu, celu i lotniska zapasowego"],
+    unlocks: "Złoty raport sprawdzenia i tryb omówienia instruktora",
   },
   {
     id: "briefing-captain",
-    title: "Briefing Captain",
-    level: "black",
-    requirements: ["Complete all historical replay scenarios", "Keep spaced-review mastery above 80%", "Submit a full route briefing with runway component"],
-    unlocks: "Black-level profile, advanced missions and classroom-ready export",
+    title: "Kapitan briefingu",
+    level: "czarny",
+    requirements: ["Ukończ wszystkie historyczne scenariusze odtworzeniowe", "Utrzymaj opanowanie powtórek powyżej 80%", "Przygotuj pełny briefing trasy ze składową pasa"],
+    unlocks: "Profil czarnego poziomu, zaawansowane misje i eksport do użycia na zajęciach",
   },
 ];
 

@@ -9,14 +9,14 @@ export default function RealWeatherError({
 }) {
   return (
     <main className="mx-auto w-full max-w-3xl p-6">
-      <h1 className="text-2xl font-semibold">Real Weather</h1>
-      <p className="mt-3 text-red-600">Could not load weather: {error.message}</p>
+      <h1 className="text-2xl font-semibold">Pogoda na żywo</h1>
+      <p className="mt-3 text-red-600">Nie udało się wczytać pogody: {error.message}</p>
       <button
         type="button"
         onClick={reset}
         className="mt-4 rounded-md border px-3 py-2"
       >
-        Try again
+        Spróbuj ponownie
       </button>
     </main>
   );

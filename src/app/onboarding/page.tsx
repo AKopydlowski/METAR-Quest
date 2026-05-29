@@ -8,8 +8,8 @@ import { PILOT_PROFILES, PROFILE_IDS, type MissionProfile } from "@/lib/decision
 const GOALS = [
   { id: "exam", en: "Pass an exam", pl: "Zdać egzamin", skill: "altimeter" },
   { id: "speed", en: "Read METAR faster", pl: "Szybciej czytać METAR", skill: "wind" },
-  { id: "decision", en: "Make safer GO/NO-GO calls", pl: "Podejmować lepsze GO/NO-GO", skill: "clouds" },
-  { id: "live", en: "Train with live weather", pl: "Ćwiczyć na pogodzie live", skill: "visibility" },
+  { id: "decision", en: "Make safer GO/NO-GO calls", pl: "Podejmować bezpieczniejsze decyzje GO/NO-GO", skill: "clouds" },
+  { id: "live", en: "Train with live weather", pl: "Ćwiczyć na pogodzie na żywo", skill: "visibility" },
 ];
 
 export default function OnboardingPage() {
@@ -21,7 +21,7 @@ export default function OnboardingPage() {
 
   const result = useMemo(() => {
     const goalDef = GOALS.find((item) => item.id === goal) ?? GOALS[0];
-    const level = confidence >= 4 ? "advanced" : confidence >= 3 ? "builder" : "starter";
+    const level = confidence >= 4 ? "zaawansowany" : confidence >= 3 ? "praktyka" : "podstawy";
     const next = confidence >= 4 ? "/missions" : `/quiz?skill=${goalDef.skill}`;
     return { goalDef, level, next };
   }, [confidence, goal]);
@@ -29,7 +29,7 @@ export default function OnboardingPage() {
   return (
     <div className="w-full space-y-6">
       <section className="rounded-[2rem] border border-cyan-300/20 bg-slate-950/80 p-6 text-white shadow-2xl shadow-sky-950/30">
-        <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">3-minute placement</p>
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">3-minutowa diagnoza</p>
         <h1 className="mt-2 text-4xl font-black">{pl ? "Zbuduj swój plan treningu METAR" : "Build your METAR training plan"}</h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
           {pl ? "Wybierz profil, cel i poziom pewności. METAR Quest skieruje Cię do najlepszego pierwszego ćwiczenia." : "Choose your profile, goal and confidence. METAR Quest routes you to the best first drill."}
@@ -41,7 +41,7 @@ export default function OnboardingPage() {
           <h2 className="font-bold">{pl ? "1. Kim jesteś?" : "1. Who are you?"}</h2>
           <div className="mt-4 grid gap-2">
             {PROFILE_IDS.map((id) => (
-              <button key={id} onClick={() => setProfile(id)} className={`rounded-xl border p-3 text-left text-sm ${profile === id ? "border-cyan-300 bg-cyan-400/10" : "border-slate-500/30"}`}>
+              <button key={id} onClick={() => setProfile(id)} className={`rounded-xl border p-3 text-left text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.99] ${profile === id ? "border-cyan-300 bg-cyan-400/10" : "border-slate-500/30"}`}>
                 <strong>{PILOT_PROFILES[id].label}</strong><br />{PILOT_PROFILES[id][language]}
               </button>
             ))}
@@ -52,7 +52,7 @@ export default function OnboardingPage() {
           <h2 className="font-bold">{pl ? "2. Jaki jest cel?" : "2. What is the goal?"}</h2>
           <div className="mt-4 grid gap-2">
             {GOALS.map((item) => (
-              <button key={item.id} onClick={() => setGoal(item.id)} className={`rounded-xl border p-3 text-left text-sm ${goal === item.id ? "border-emerald-300 bg-emerald-400/10" : "border-slate-500/30"}`}>
+              <button key={item.id} onClick={() => setGoal(item.id)} className={`rounded-xl border p-3 text-left text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.99] ${goal === item.id ? "border-emerald-300 bg-emerald-400/10" : "border-slate-500/30"}`}>
                 {pl ? item.pl : item.en}
               </button>
             ))}

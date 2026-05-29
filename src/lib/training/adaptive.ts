@@ -13,14 +13,14 @@ export type SkillMastery = {
 };
 
 const SKILL_LABELS: Record<string, string> = {
-  wind: "wind decoding",
-  visibility: "visibility and RVR",
-  clouds: "ceilings and cloud layers",
+  wind: "wiatr",
+  visibility: "widzialność i RVR",
+  clouds: "podstawy i warstwy chmur",
   altimeter: "QNH / altimeter",
-  temperature: "temperature and dewpoint",
-  weather: "present weather",
-  taf: "TAF changes",
-  scan: "full METAR scan",
+  temperature: "temperatura i punkt rosy",
+  weather: "pogoda bieżąca",
+  taf: "zmiany TAF",
+  scan: "pełny skan METAR",
 };
 
 function safeDate(value?: string) {
@@ -46,8 +46,8 @@ export function getSkillMastery(progress: UserProgress | null, now = new Date())
       const recencyPenalty = skill.lastAnsweredAt ? Math.min(0.18, Math.max(0, nowMs - safeDate(skill.lastAnsweredAt)) / 86_400_000 / 30) : 0.18;
       const priority = Math.round((1 - mastery + (due ? 0.25 : 0) + recencyPenalty) * 100);
       const reason = due
-        ? `${getSkillLabel(skill.skillTag)} is due for review${accuracy < 0.75 ? " and accuracy is below the target band" : " to protect retention"}.`
-        : `${getSkillLabel(skill.skillTag)} is scheduled for spaced repetition.`;
+        ? `${getSkillLabel(skill.skillTag)} wymaga powtórki${accuracy < 0.75 ? " — skuteczność jest poniżej celu" : " dla utrwalenia"}.`
+        : `${getSkillLabel(skill.skillTag)} jest zaplanowane do powtórki rozłożonej w czasie.`;
       return {
         skillTag: skill.skillTag,
         accuracy: Math.round(accuracy * 100),
@@ -68,7 +68,7 @@ export function getNextRecommendedDrill(progress: UserProgress | null, questions
   const targetSkill = mastery.find((item) => item.due)?.skillTag ?? fallbackSkill;
   const pool = questions.filter((question) => question.skillTag === targetSkill);
   const nextQuestions = (pool.length ? pool : questions).slice(0, 10);
-  const reason = mastery[0]?.reason ?? "Start with a short baseline drill so METAR Quest can measure your strengths.";
+  const reason = mastery[0]?.reason ?? "Zacznij od krótkiego ćwiczenia bazowego, aby METAR Quest poznał Twoje mocne strony.";
   return {
     targetSkill,
     href: `/quiz?skill=${encodeURIComponent(targetSkill)}`,

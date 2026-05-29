@@ -23,6 +23,8 @@ type ApiResponse = {
   error?: string;
 };
 
+const LEG_LABELS = { departure: "Odlot", destination: "Cel", alternate: "Zapasowe" };
+
 const DECISION_STYLE: Record<PilotDecision, string> = {
   GO: "border-emerald-300/30 bg-emerald-400/10 text-emerald-100",
   CAUTION: "border-amber-300/30 bg-amber-400/10 text-amber-100",
@@ -73,7 +75,7 @@ export default function BriefingLabPage() {
     const dest = normalizeStation(destinationStation);
     const alt = normalizeStation(alternateStation);
     if (![dep, dest, alt].every(isIcao)) {
-      setError(pl ? "Podaj trzy poprawne 4-literowe kody ICAO." : "Enter three valid 4-letter ICAO codes.");
+      setError(pl ? "Podaj trzy poprawne czteroliterowe kody ICAO." : "Enter three valid 4-letter ICAO codes.");
       return;
     }
 
@@ -84,9 +86,9 @@ export default function BriefingLabPage() {
         [dep, dest, alt].map((station) => fetch(`/api/weather/metar?station=${encodeURIComponent(station)}&taf=true`)),
       );
       const [depPayload, destPayload, altPayload] = (await Promise.all([depResponse.json(), destResponse.json(), altResponse.json()])) as ApiResponse[];
-      if (!depResponse.ok || !depPayload.metar) throw new Error(depPayload.error ?? `No METAR returned for ${dep}`);
-      if (!destResponse.ok || !destPayload.metar) throw new Error(destPayload.error ?? `No METAR returned for ${dest}`);
-      if (!altResponse.ok || !altPayload.metar) throw new Error(altPayload.error ?? `No METAR returned for ${alt}`);
+      if (!depResponse.ok || !depPayload.metar) throw new Error(depPayload.error ?? `Brak raportu METAR dla ${dep}`);
+      if (!destResponse.ok || !destPayload.metar) throw new Error(destPayload.error ?? `Brak raportu METAR dla ${dest}`);
+      if (!altResponse.ok || !altPayload.metar) throw new Error(altPayload.error ?? `Brak raportu METAR dla ${alt}`);
       setDepartureMetar(depPayload.metar);
       setDestinationMetar(destPayload.metar);
       setAlternateMetar(altPayload.metar);
@@ -94,7 +96,7 @@ export default function BriefingLabPage() {
       setDestinationStation(dest);
       setAlternateStation(alt);
     } catch (err) {
-      setError(err instanceof Error ? err.message : pl ? "Nie udało się zbudować briefingu live." : "Could not build the live briefing.");
+      setError(err instanceof Error ? err.message : pl ? "Nie udało się zbudować briefingu na żywo." : "Could not build the live briefing.");
     } finally {
       setLoading(false);
     }
@@ -120,8 +122,8 @@ export default function BriefingLabPage() {
       <section className="overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-[linear-gradient(135deg,rgba(2,6,23,0.98),rgba(14,116,144,0.45),rgba(79,70,229,0.32))] p-6 text-white shadow-2xl shadow-cyan-950/30">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.26em] text-cyan-200">{pl ? "Nowy moduł premium" : "New premium module"}</p>
-            <h1 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">{pl ? "Briefing Lab: wszystko w jednym symulatorze decyzji." : "Briefing Lab: every decision tool in one simulator."}</h1>
+            <p className="text-xs font-black uppercase tracking-[0.26em] text-cyan-200">{pl ? "Laboratorium decyzji" : "New premium module"}</p>
+            <h1 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">{pl ? "Laboratorium briefingu: wszystkie narzędzia decyzji w jednym miejscu." : "Briefing Lab: every decision tool in one simulator."}</h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base">
               {pl
                 ? "Zbuduj pełny briefing trasy, policz crosswind, odtwórz historyczną pogodę, przejdź checkride i dostawaj feedback jak od instruktora."
@@ -145,15 +147,15 @@ export default function BriefingLabPage() {
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">{pl ? "Pełny briefing trasy" : "Full route briefing"}</p>
-              <h2 className="mt-1 text-2xl font-bold">{departureStation} → {destinationStation} • ALT {alternateStation}</h2>
+              <h2 className="mt-1 text-2xl font-bold">{departureStation} → {destinationStation} • zapasowe {alternateStation}</h2>
             </div>
             <button onClick={loadLiveBriefing} disabled={loading} className="rounded-xl bg-cyan-300 px-4 py-2 text-sm font-black text-slate-950 hover:bg-cyan-200 disabled:opacity-60">
-              {loading ? (pl ? "Ładowanie..." : "Loading...") : (pl ? "Wczytaj live briefing" : "Load live briefing")}
+              {loading ? (pl ? "Ładowanie..." : "Loading...") : (pl ? "Wczytaj briefing na żywo" : "Load live briefing")}
             </button>
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-3">
-            {[{ label: pl ? "Start" : "Departure", value: departureStation, set: setDepartureStation }, { label: pl ? "Cel" : "Destination", value: destinationStation, set: setDestinationStation }, { label: "Alternate", value: alternateStation, set: setAlternateStation }].map((item) => (
+            {[{ label: "Odlot", value: departureStation, set: setDepartureStation }, { label: pl ? "Cel" : "Destination", value: destinationStation, set: setDestinationStation }, { label: "Zapasowe", value: alternateStation, set: setAlternateStation }].map((item) => (
               <label key={item.label} className="text-xs font-bold uppercase tracking-wide text-slate-400">{item.label}
                 <input value={item.value} onChange={(event) => item.set(event.target.value.toUpperCase())} maxLength={4} className="mt-1 block w-full rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 font-mono text-white" />
               </label>
@@ -180,7 +182,7 @@ export default function BriefingLabPage() {
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             {legs.map((leg) => (
               <article key={leg.role} className={`rounded-2xl border p-4 ${DECISION_STYLE[leg.assessment.expected]}`}>
-                <p className="text-xs font-black uppercase tracking-[0.18em] opacity-70">{leg.role}</p>
+                <p className="text-xs font-black uppercase tracking-[0.18em] opacity-70">{LEG_LABELS[leg.role]}</p>
                 <p className="mt-2 text-2xl font-black">{leg.station} • {leg.assessment.expected}</p>
                 <p className="mt-2 font-mono text-xs opacity-80">{leg.metar.rawText}</p>
                 <p className="mt-3 text-sm">{leg.assessment.primaryRisk}</p>
@@ -190,14 +192,14 @@ export default function BriefingLabPage() {
         </div>
 
         <aside className="rounded-3xl border border-emerald-300/20 bg-emerald-500/10 p-5 shadow-xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">{pl ? "Crosswind calculator" : "Crosswind calculator"}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">{pl ? "Kalkulator wiatru bocznego" : "Kalkulator wiatru bocznego"}</p>
           {crosswind ? (
             <div className="mt-4 space-y-3 text-sm">
               <p className="text-4xl font-black">{crosswind.status}</p>
               <p><strong>RWY:</strong> {crosswind.runwayHeading}°</p>
               <p><strong>{pl ? "Wiatr" : "Wind"}:</strong> {crosswind.windDirection ?? "VRB"}°/{crosswind.windSpeedKt} kt{crosswind.gustKt ? ` G${crosswind.gustKt}` : ""}</p>
-              <p><strong>Head/tail:</strong> {crosswind.headwindKt} kt</p>
-              <p><strong>Crosswind:</strong> {crosswind.crosswindKt} kt{crosswind.gustCrosswindKt ? ` / gust ${crosswind.gustCrosswindKt} kt` : ""}</p>
+              <p><strong>Czołowy/tylny:</strong> {crosswind.headwindKt} kt</p>
+              <p><strong>Wiatr boczny:</strong> {crosswind.crosswindKt} kt{crosswind.gustCrosswindKt ? ` / poryw ${crosswind.gustCrosswindKt} kt` : ""}</p>
               <p><strong>{pl ? "Limit profilu" : "Profile limit"}:</strong> {crosswind.limitKt} kt</p>
               <p className="rounded-xl border border-white/10 bg-black/15 p-3">{crosswind.explanation}</p>
             </div>
@@ -207,7 +209,7 @@ export default function BriefingLabPage() {
 
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="rounded-3xl border border-violet-300/20 bg-violet-500/10 p-5 shadow-xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-300">{pl ? "AI Instructor style" : "AI Instructor style"}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-300">{pl ? "Styl instruktora AI" : "Styl instruktora AI"}</p>
           <h2 className="mt-2 text-2xl font-bold">{pl ? "Debrief po briefingu" : "Briefing debrief"}</h2>
           <ol className="mt-4 space-y-2 text-sm">
             {instructor.scanOrder.map((item) => <li key={item} className="rounded-xl border border-white/10 bg-black/15 p-3">{item}</li>)}
@@ -229,7 +231,7 @@ export default function BriefingLabPage() {
         <div className="rounded-3xl border border-sky-300/20 bg-[var(--surface)]/90 p-5 shadow-xl">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-300">{pl ? "Replay real weather" : "Replay real weather"}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-300">{pl ? "Odtworzenie pogody" : "Odtworzenie pogody"}</p>
               <h2 className="mt-2 text-2xl font-bold">{scenario.title}</h2>
               <p className="mt-1 text-sm text-slate-400">{scenario.route} • {scenario.region} • {scenario.difficulty}</p>
             </div>
@@ -245,7 +247,7 @@ export default function BriefingLabPage() {
           </div>
           <div className="mt-4 rounded-2xl border border-white/10 bg-black/15 p-4">
             <p className="font-mono text-sm">{scenarioMetar.rawText}</p>
-            <p className="mt-3 text-sm"><strong>{pl ? "Oczekiwana decyzja" : "Expected call"}:</strong> {scenario.timeline[scenarioStep].expected}</p>
+            <p className="mt-3 text-sm"><strong>{pl ? "Oczekiwana decyzja" : "Oczekiwana decyzja"}:</strong> {scenario.timeline[scenarioStep].expected}</p>
             <p className="mt-2 text-sm text-slate-300">{scenario.teachingPoint}</p>
           </div>
         </div>
@@ -258,7 +260,7 @@ export default function BriefingLabPage() {
 
       <section className="rounded-3xl border border-indigo-300/20 bg-indigo-500/10 p-5 shadow-xl">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">{pl ? "Ścieżka certyfikacji" : "Certification path"}</p>
-        <h2 className="mt-2 text-2xl font-bold">{pl ? "Od podstaw METAR do Briefing Captain" : "From METAR basics to Briefing Captain"}</h2>
+        <h2 className="mt-2 text-2xl font-bold">{pl ? "Od podstaw METAR do Kapitan briefingu" : "From METAR basics to Kapitan briefingu"}</h2>
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {certificationTracks.map((track) => (
             <article key={track.id} className="rounded-2xl border border-white/10 bg-black/15 p-4">

@@ -98,15 +98,15 @@ export default function TimeAttackPage() {
   const isFinished = timeLeft <= 0;
   const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
   const multiplier = combo >= 10 ? 3 : combo >= 5 ? 2 : 1;
-  const rank = score >= 35 ? "Ace" : score >= 22 ? "Gold" : score >= 12 ? "Silver" : "Bronze";
+  const rank = score >= 35 ? "As" : score >= 22 ? "Złoto" : score >= 12 ? "Srebro" : "Brąz";
 
   return (
     <div className="w-full space-y-5">
       <section className="overflow-hidden rounded-[2rem] border border-sky-300/20 bg-slate-950/80 p-6 text-white shadow-2xl shadow-sky-950/30">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">{pl ? "Trener arcade" : "Arcade trainer"}</p>
-            <h1 className="mt-2 text-4xl font-black tracking-tight">Time Attack</h1>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">{pl ? "Trener na czas" : "Arcade trainer"}</p>
+            <h1 className="mt-2 text-4xl font-black tracking-tight">Trening na czas</h1>
             <p className="mt-2 text-sm text-slate-300">{t("questionSource")}: {source === "live-api" ? t("liveApi") : t("localDb")}</p>
           </div>
           <label className="text-sm">
@@ -119,14 +119,14 @@ export default function TimeAttackPage() {
         <div className="mt-4 grid gap-3 sm:grid-cols-4">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs uppercase text-slate-400">{t("time")}</p><p className="text-3xl font-black">{Math.max(0, timeLeft)}s</p></div>
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs uppercase text-slate-400">{t("score")}</p><p className="text-3xl font-black">{score}</p></div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs uppercase text-slate-400">Combo</p><p className="text-3xl font-black">{combo}🔥</p></div>
-          <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4"><p className="text-xs uppercase text-cyan-200">Multiplier</p><p className="text-3xl font-black">x{multiplier}</p></div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs uppercase text-slate-400">Seria</p><p className="text-3xl font-black">{combo}🔥</p></div>
+          <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4"><p className="text-xs uppercase text-cyan-200">Mnożnik</p><p className="text-3xl font-black">x{multiplier}</p></div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={() => setIsPaused((paused) => !paused)} disabled={isFinished} className="rounded-xl border border-sky-300/40 px-4 py-2 text-sm font-semibold disabled:opacity-50">
             {isPaused ? t("resume") : t("pause")}
           </button>
-          <button onClick={() => setProMode((value) => !value)} className={`rounded-xl border px-4 py-2 text-sm font-semibold ${proMode ? "border-rose-300 bg-rose-500/20 text-rose-100" : "border-slate-500"}`}>Pro mode {proMode ? "ON" : "OFF"}</button>
+          <button onClick={() => setProMode((value) => !value)} className={`rounded-xl border px-4 py-2 text-sm font-semibold ${proMode ? "border-rose-300 bg-rose-500/20 text-rose-100" : "border-slate-500"}`}>{pl ? "Tryb Pro" : "Pro mode"} {proMode ? (pl ? "włączony" : "ON") : (pl ? "wyłączony" : "OFF")}</button>
         </div>
       </section>
 
@@ -140,8 +140,8 @@ export default function TimeAttackPage() {
               <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("bestCombo")}</p><p className="text-xl font-semibold">{bestCombo}</p></div>
               <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("answers")}</p><p className="text-xl font-semibold">{answered}</p></div>
             </div>
-            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/10 p-4"><p className="text-xs uppercase tracking-[0.2em] text-cyan-300">Share card</p><p className="mt-2 font-mono text-sm">METAR Quest Time Attack: {score} pts, {accuracy}% accuracy, {bestCombo} best combo, rank {rank}.</p></div>
-            {accuracy === 100 && answered > 0 && <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4 text-sm font-bold">🏅 Perfect streak badge unlocked</div>}
+            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/10 p-4"><p className="text-xs uppercase tracking-[0.2em] text-cyan-300">Karta wyniku</p><p className="mt-2 font-mono text-sm">METAR Quest — Trening na czas: {score} pkt, skuteczność {accuracy}%, najlepsza seria {bestCombo}, ranga {rank}.</p></div>
+            {accuracy === 100 && answered > 0 && <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4 text-sm font-bold">🏅 Odznaka perfekcyjnej serii odblokowana</div>}
             <button onClick={() => restartRound()} className="rounded-xl bg-sky-500 px-4 py-2 font-semibold text-slate-950 hover:bg-sky-400">{t("playAgain")}</button>
           </div>
         ) : isPaused ? (
@@ -153,7 +153,7 @@ export default function TimeAttackPage() {
           <>
             <p className="text-lg font-medium">{q.prompt}</p>
             <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/60 p-3 dark:border-indigo-500/40 dark:bg-indigo-900/20">
-              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-200">METAR reference</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-200">Raport METAR</p>
               <p className="mt-1 font-mono text-sm text-indigo-950 dark:text-indigo-100">{q.metarRaw}</p>
             </div>
             <div className="mt-4 grid gap-2">

@@ -9,13 +9,13 @@ type Dict = Record<string, string>;
 const translations: Record<Language, Dict> = {
   en: {
     appName: "METAR Quest",
-    home: "Home",
+    home: "Strona główna",
     learn: "Learn",
     decode: "Decode",
     quiz: "Quiz",
     timeAttack: "Time Attack",
     realWeather: "Real Weather",
-    briefingLab: "Briefing Lab",
+    briefingLab: "Laboratorium",
     missions: "Missions",
     progress: "Progress",
     onboarding: "Training Plan",
@@ -30,6 +30,7 @@ const translations: Record<Language, Dict> = {
     quizEmpty: "No quiz attempts yet. Start your first round.",
     menu: "Menu",
     close: "Close",
+    more: "More",
     score: "Score",
     streak: "Streak",
     hints: "Hints",
@@ -68,16 +69,16 @@ const translations: Record<Language, Dict> = {
     appName: "METAR Quest",
     home: "Strona główna",
     learn: "Nauka",
-    decode: "Dekodowanie",
+    decode: "Dekoder",
     quiz: "Quiz",
-    timeAttack: "Atak czasu",
+    timeAttack: "Na czas",
     realWeather: "Pogoda na żywo",
-    briefingLab: "Briefing Lab",
-    missions: "Misje",
+    briefingLab: "Laboratorium",
+    missions: "Misje GO/NO-GO",
     progress: "Postęp",
     onboarding: "Plan treningu",
     chooseLanguage: "Język",
-    heroTitle: "Odczytuj raporty pogodowe lotnicze szybko i pewnie.",
+    heroTitle: "Odczytuj lotnicze raporty pogodowe szybko i pewnie.",
     heroDesc:
       "METAR Quest pomaga pilotom, uczniom i pasjonatom lotnictwa opanować interpretację METAR dzięki interaktywnemu dekodowaniu, quizom i powtórkom scenariuszowym.",
     startDecoding: "Zacznij dekodować",
@@ -87,6 +88,7 @@ const translations: Record<Language, Dict> = {
     quizEmpty: "Brak prób quizu. Rozpocznij pierwszą rundę.",
     menu: "Menu",
     close: "Zamknij",
+    more: "Więcej",
     score: "Wynik",
     streak: "Seria",
     hints: "Podpowiedzi",
@@ -99,12 +101,12 @@ const translations: Record<Language, Dict> = {
     noWeather: "Brak wczytanej pogody.",
     weatherSource: "METAR na żywo (API AviationWeather.gov)",
     questionSource: "Źródło pytań",
-    liveApi: "Live API (większa baza)",
+    liveApi: "API na żywo (większa baza)",
     localDb: "Lokalna baza",
     time: "Czas",
     endOfRound: "Koniec rundy",
     accuracy: "Skuteczność",
-    bestCombo: "Najlepsze combo",
+    bestCombo: "Najlepsza seria",
     answers: "Odpowiedzi",
     difficulty: "Trudność",
     all: "Wszystkie",
@@ -117,7 +119,7 @@ const translations: Record<Language, Dict> = {
     resume: "Wznów",
     duration: "Czas rundy",
     weakAreas: "Słabsze obszary",
-    recommendedPractice: "Rekomendowany trening",
+    recommendedPractice: "Zalecany trening",
     exam: "Egzamin",
     leaderboard: "Ranking",
   },
@@ -132,11 +134,7 @@ type LanguageContextType = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(() => {
-    if (typeof window === "undefined") return "pl";
-    const saved = window.localStorage.getItem("metar-quest:language");
-    return saved === "pl" || saved === "en" ? saved : "pl";
-  });
+  const [language, setLanguageState] = useState<Language>("pl");
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);

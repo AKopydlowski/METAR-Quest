@@ -19,13 +19,13 @@ const FAVORITES_KEY = "metar-quest:favorite-stations";
 const WEATHER_CACHE_KEY = "metar-quest:last-weather:";
 const QUICK_STATIONS = ["EPWA", "EPKK", "EPPO", "EPGD", "EPWR", "KJFK", "EGLL"];
 const AIRPORTS = [
-  { code: "EPWA", city: "Warsaw", x: 54, y: 42 },
+  { code: "EPWA", city: "Warszawa", x: 54, y: 42 },
   { code: "EPKK", city: "Kraków", x: 55, y: 64 },
   { code: "EPPO", city: "Poznań", x: 36, y: 48 },
   { code: "EPGD", city: "Gdańsk", x: 47, y: 18 },
   { code: "EPWR", city: "Wrocław", x: 35, y: 65 },
-  { code: "KJFK", city: "New York", x: 16, y: 54 },
-  { code: "EGLL", city: "London", x: 43, y: 50 },
+  { code: "KJFK", city: "Nowy Jork", x: 16, y: 54 },
+  { code: "EGLL", city: "Londyn", x: 43, y: 50 },
 ];
 
 function loadCachedWeather(station: string): ApiResponse | null {
@@ -40,8 +40,8 @@ function loadCachedWeather(station: string): ApiResponse | null {
 }
 
 function observationLabel(observedAt?: string) {
-  if (!observedAt) return "Observation time unknown";
-  return `Observed ${observedAt.slice(0, 2)} day at ${observedAt.slice(2, 4)}:${observedAt.slice(4, 6)}Z`;
+  if (!observedAt) return "Czas obserwacji nieznany";
+  return `Obserwacja: dzień ${observedAt.slice(0, 2)}, ${observedAt.slice(2, 4)}:${observedAt.slice(4, 6)}Z`;
 }
 
 function loadStringList(key: string): string[] {
@@ -104,7 +104,7 @@ export default function RealWeatherPage() {
       const cached = loadCachedWeather(normalized);
       if (cached?.metar) {
         setData(cached);
-        setError(pl ? "Pokazuję ostatni zapisany raport — live API jest niedostępne." : "Showing last saved report — live API is unavailable.");
+        setError(pl ? "Pokazuję ostatni zapisany raport — API na żywo jest niedostępne." : "Showing last saved report — live API is unavailable.");
       } else {
         setError(pl ? "Nie udało się pobrać pogody. Spróbuj ponownie." : "Could not load weather. Try again.");
       }
@@ -126,9 +126,9 @@ export default function RealWeatherPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">{t("weatherSource")}</p>
-            <h1 className="mt-2 text-4xl font-black">{pl ? "Live briefing pogodowy" : "Live weather briefing"}</h1>
+            <h1 className="mt-2 text-4xl font-black">{pl ? "Briefing pogody na żywo" : "Live weather briefing"}</h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-300">
-              {pl ? "Wczytaj METAR/TAF, zapisz ulubione lotniska i zobacz TAF jako oś czasu ryzyka." : "Load METAR/TAF, save favorite airports and review TAF as a risk timeline."}
+              {pl ? "Wczytaj METAR/TAF, zapisz ulubione lotniska i zobacz TAF jako czytelną oś ryzyka." : "Load METAR/TAF, save favorite airports and review TAF as a risk timeline."}
             </p>
           </div>
           <form onSubmit={onSubmit} className="flex min-w-0 gap-2">
@@ -139,7 +139,7 @@ export default function RealWeatherPage() {
               className="min-w-0 rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 font-mono text-white placeholder:text-slate-500"
               placeholder={pl ? "ICAO, np. EPPO" : "ICAO, e.g. KJFK"}
             />
-            <button className="rounded-xl bg-cyan-300 px-5 py-3 font-bold text-slate-950 disabled:opacity-50" disabled={loading || !station.trim()}>{loading ? t("loading") : t("load")}</button>
+            <button className="rounded-xl bg-cyan-300 px-5 py-3 font-bold text-slate-950 transition hover:bg-cyan-200 active:scale-95 disabled:opacity-50" disabled={loading || !station.trim()}>{loading ? t("loading") : t("load")}</button>
             <button type="button" onClick={() => toggleFavorite(station)} className="rounded-xl border border-cyan-300/40 px-4 py-3 font-bold text-cyan-100">★</button>
           </form>
         </div>
@@ -165,7 +165,7 @@ export default function RealWeatherPage() {
             <button
               key={airport.code}
               onClick={() => void loadWeather(airport.code)}
-              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-cyan-300/40 bg-slate-950/80 px-3 py-2 text-left text-xs text-white shadow-lg hover:bg-cyan-500/30"
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-cyan-300/40 bg-slate-950/80 px-3 py-2 text-left text-xs text-white shadow-lg transition-all duration-200 hover:-translate-y-[55%] hover:bg-cyan-500/30 active:scale-95"
               style={{ left: `${airport.x}%`, top: `${airport.y}%` }}
             >
               <span className="block font-mono font-black">{airport.code}</span>
@@ -183,15 +183,15 @@ export default function RealWeatherPage() {
           <CockpitWeatherPanel metar={data.metar} language={language} />
           <PilotBriefingCard metar={data.metar} language={language} />
           <section className="rounded-3xl border border-zinc-300/20 bg-[var(--surface)]/90 p-5 shadow-xl">
-            <p><strong>Raw:</strong> <span className="font-mono text-sm">{data.metar.rawText}</span></p>
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">{observationLabel(data.metar.observedAt)} • educational briefing, not operational dispatch.</p>
+            <p><strong>Surowy raport:</strong> <span className="font-mono text-sm">{data.metar.rawText}</span></p>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">{observationLabel(data.metar.observedAt)} • briefing szkoleniowy — nie używaj do operacyjnego planowania lotu.</p>
             <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-              <p><strong>Category:</strong> {data.metar.flightCategory ?? "Unknown"}</p>
-              <p><strong>Visibility:</strong> {data.metar.visibility?.raw ?? "?"} ({data.metar.visibility?.statuteMiles ?? "?"} SM)</p>
-              <p><strong>Wind:</strong> {data.metar.wind ? `${data.metar.wind.direction ?? "VRB"}° ${data.metar.wind.speedKt}KT${data.metar.wind.gustKt ? ` G${data.metar.wind.gustKt}` : ""}` : "Unknown"}</p>
-              <p><strong>Temp/Dew:</strong> {data.metar.temperature ? `${data.metar.temperature.celsius}/${data.metar.temperature.dewpointCelsius}°C` : "Unknown"}</p>
-              <p><strong>Weather:</strong> {data.metar.weatherCodes?.length ? data.metar.weatherCodes.join(", ") : "None"}</p>
-              <p><strong>Trend:</strong> {data.metar.trend?.length ? data.metar.trend.join(", ") : "None"}</p>
+              <p><strong>Kategoria:</strong> {data.metar.flightCategory ?? "Brak danych"}</p>
+              <p><strong>Widzialność:</strong> {data.metar.visibility?.raw ?? "?"} ({data.metar.visibility?.statuteMiles ?? "?"} SM)</p>
+              <p><strong>Wiatr:</strong> {data.metar.wind ? `${data.metar.wind.direction ?? "VRB"}° ${data.metar.wind.speedKt}KT${data.metar.wind.gustKt ? ` G${data.metar.wind.gustKt}` : ""}` : "Brak danych"}</p>
+              <p><strong>Temp./punkt rosy:</strong> {data.metar.temperature ? `${data.metar.temperature.celsius}/${data.metar.temperature.dewpointCelsius}°C` : "Brak danych"}</p>
+              <p><strong>Pogoda:</strong> {data.metar.weatherCodes?.length ? data.metar.weatherCodes.join(", ") : "Brak"}</p>
+              <p><strong>Trend:</strong> {data.metar.trend?.length ? data.metar.trend.join(", ") : "Brak"}</p>
             </div>
           </section>
 
@@ -202,10 +202,10 @@ export default function RealWeatherPage() {
                 <p className="mt-1 text-sm text-slate-400">{pl ? "Ustaw okno misji, aby zobaczyć ryzyko prognozowane dla lotu." : "Set a mission window to highlight forecast risk for the flight."}</p>
               </div>
               <div className="flex gap-2">
-                <label className="text-xs font-bold uppercase tracking-wide text-slate-400">DEP Z
+                <label className="text-xs font-bold uppercase tracking-wide text-slate-400">Odlot Z
                   <input type="number" min={0} max={23} value={departureHour} onChange={(event) => setDepartureHour(Number(event.target.value))} className="mt-1 block w-20 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-white" />
                 </label>
-                <label className="text-xs font-bold uppercase tracking-wide text-slate-400">ARR Z
+                <label className="text-xs font-bold uppercase tracking-wide text-slate-400">Przylot Z
                   <input type="number" min={0} max={23} value={arrivalHour} onChange={(event) => setArrivalHour(Number(event.target.value))} className="mt-1 block w-20 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-white" />
                 </label>
               </div>

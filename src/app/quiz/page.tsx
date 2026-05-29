@@ -11,6 +11,8 @@ const QUIZ_LENGTH = 10;
 type DifficultyFilter = "all" | QuestionDifficulty;
 type QuizMode = "classic" | "daily" | "endless" | "exam" | "weak";
 const SKILLS = ["wind", "visibility", "clouds", "altimeter", "temperature", "weather"] as const;
+const MODE_LABELS: Record<QuizMode, string> = { classic: "Klasyczny", daily: "Dzienny", endless: "Bez końca", exam: "Egzamin", weak: "Słaby obszar" };
+const SKILL_LABELS: Record<string, string> = { wind: "wiatr", visibility: "widzialność", clouds: "chmury", altimeter: "QNH / altimeter", temperature: "temperatura", weather: "pogoda" };
 
 export default function QuizPage() {
   const { t, language } = useLanguage();
@@ -97,8 +99,8 @@ export default function QuizPage() {
     return (
       <main className="min-h-screen p-6">
         <section className="mx-auto max-w-4xl rounded-3xl border border-sky-200/20 bg-[var(--surface)]/80 p-6">
-          <h1 className="text-3xl font-bold">{mode === "exam" ? (language === "pl" ? "Egzamin METAR" : "METAR Exam") : "METAR Quiz"}</h1>
-          <p className="mt-3 text-sm text-slate-300">No questions are available for this filter.</p>
+          <h1 className="text-3xl font-bold">{mode === "exam" ? (language === "pl" ? "Egzamin METAR" : "METAR Exam") : "Quiz METAR"}</h1>
+          <p className="mt-3 text-sm text-slate-300">Brak pytań dla wybranego filtra.</p>
         </section>
       </main>
     );
@@ -109,8 +111,8 @@ export default function QuizPage() {
       <section className="mx-auto max-w-4xl rounded-3xl border border-sky-200/20 bg-[var(--surface)]/80 p-6 shadow-lg">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">{mode === "exam" ? (language === "pl" ? "Egzamin METAR" : "METAR Exam") : "METAR Quiz"}</h1>
-            <p className="mt-1 text-sm">{t("score")}: {score} | {t("streak")}: {streak} | {mode === "exam" ? (language === "pl" ? "bez podpowiedzi" : "no hints") : `${t("hints")}: ${hintsLeft}`}</p>
+            <h1 className="text-3xl font-bold">{mode === "exam" ? (language === "pl" ? "Egzamin METAR" : "METAR Exam") : "Quiz METAR"}</h1>
+            <p className="mt-1 text-sm">{t("score")}: {score} | {t("streak")}: {streak} | {mode === "exam" ? (language === "pl" ? "bez podpowiedzi" : "bez podpowiedzi") : `${t("hints")}: ${hintsLeft}`}</p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="text-sm">
@@ -120,10 +122,10 @@ export default function QuizPage() {
               </select>
             </label>
             <label className="text-sm">
-              <span className="mb-1 block text-xs uppercase tracking-wide text-slate-400">{language === "pl" ? "Umiejętność" : "Skill"}</span>
+              <span className="mb-1 block text-xs uppercase tracking-wide text-slate-400">{language === "pl" ? "Umiejętność" : "Umiejętność"}</span>
               <select value={skillFilter} onChange={(event) => { setSkillFilter(event.target.value); resetSession(); }} className="w-full rounded border border-slate-500 bg-slate-900 px-3 py-2 text-sm">
                 <option value="all">{t("all")}</option>
-                {SKILLS.map((skill) => <option key={skill} value={skill}>{skill}</option>)}
+                {SKILLS.map((skill) => <option key={skill} value={skill}>{SKILL_LABELS[skill]}</option>)}
               </select>
             </label>
           </div>
@@ -131,17 +133,17 @@ export default function QuizPage() {
 
         <div className="mt-4 flex flex-wrap gap-2">
           {(["classic", "daily", "endless", "weak", "exam"] as const).map((m) => (
-            <button key={m} onClick={() => { setMode(m); resetSession(); }} className={`rounded px-3 py-1 ${mode === m ? "bg-cyan-400 text-slate-900" : "bg-slate-700 text-white"}`}>{m}</button>
+            <button key={m} onClick={() => { setMode(m); resetSession(); }} className={`rounded px-3 py-1 ${mode === m ? "bg-cyan-400 text-slate-900" : "bg-slate-700 text-white"}`}>{MODE_LABELS[m]}</button>
           ))}
         </div>
-        {daily && <p className="mt-2 text-xs text-cyan-200">Daily ({daily.date}): {daily.score}/{daily.total}</p>}
+        {daily && <p className="mt-2 text-xs text-cyan-200">Misja dzienna ({daily.date}): {daily.score}/{daily.total}</p>}
         <div className="mt-3 h-2 rounded bg-slate-700"><div className="h-2 rounded bg-cyan-400" style={{ width: `${Math.min(progress, 100)}%` }} /></div>
 
         <article className="mt-5 rounded-2xl border border-slate-700 bg-slate-950/40 p-4">
           <div className="flex flex-wrap gap-2 text-xs uppercase tracking-wide text-slate-400">
             <span>{t(q.difficulty)}</span>
             <span>•</span>
-            <span>{q.skillTag}</span>
+            <span>{SKILL_LABELS[q.skillTag] ?? q.skillTag}</span>
           </div>
           <p className="mt-3 text-lg font-medium">{q.prompt}</p>
           <p className="mt-3 rounded-xl bg-slate-900 p-3 font-mono text-sm text-cyan-100">{q.metarRaw}</p>
@@ -191,7 +193,7 @@ export default function QuizPage() {
           <div className="rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
             <p className="text-xl font-semibold">{t("result")}: {score}</p>
             <p className="mt-1 text-sm text-slate-300">{t("answers")}: {mode === "endless" || mode === "weak" ? current + 1 : questions.length}</p>
-            {mode === "exam" && <p className="mt-1 text-sm text-slate-300">{language === "pl" ? "Próg zaliczenia" : "Pass mark"}: 80% • {score >= Math.ceil(questions.length * 0.8) ? "✅" : "❌"}</p>}
+            {mode === "exam" && <p className="mt-1 text-sm text-slate-300">{language === "pl" ? "Próg zaliczenia" : "Próg zaliczenia"}: 80% • {score >= Math.ceil(questions.length * 0.8) ? "✅" : "❌"}</p>}
             <button className="mt-4 rounded bg-cyan-400 px-3 py-1 text-slate-900" onClick={resetSession}>{t("playAgain")}</button>
           </div>
         </div>

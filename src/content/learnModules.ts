@@ -3,16 +3,16 @@ export type LearnModule = {
   title: string;
   skill: string;
   goal: string;
-  level: "starter" | "builder" | "mission";
+  level: "podstawy" | "praktyka" | "misja";
 };
 
 export const learnModules: LearnModule[] = [
-  { id: "station-time", title: "Station + time", skill: "scan", level: "starter", goal: "Find the ICAO identifier and UTC observation timestamp before reading risk." },
-  { id: "wind", title: "Wind", skill: "wind", level: "starter", goal: "Read direction, steady speed, variable sector and gust spread." },
-  { id: "visibility", title: "Visibility", skill: "visibility", level: "builder", goal: "Convert meters, statute miles, CAVOK and RVR into operational visibility." },
-  { id: "clouds", title: "Ceiling/clouds", skill: "clouds", level: "builder", goal: "Identify BKN/OVC/VV ceilings and convective cloud flags." },
-  { id: "weather", title: "Present weather", skill: "weather", level: "builder", goal: "Spot TS, FG, FZ, SN, RA and other mission-changing weather groups." },
-  { id: "altimeter", title: "Altimeter/QNH", skill: "altimeter", level: "starter", goal: "Read Q and A groups correctly for cockpit setup." },
-  { id: "taf", title: "TAF trends", skill: "weather", level: "mission", goal: "Use TEMPO, BECMG, FM and PROB groups to brief what can change next." },
-  { id: "decision", title: "GO / CAUTION / NO-GO", skill: "clouds", level: "mission", goal: "Turn METAR/TAF tokens, alternates and pilot profile minima into a conservative decision." },
+  { id: "station-time", title: "Stacja i czas", skill: "scan", level: "podstawy", goal: "Najpierw znajdź kod ICAO i czas obserwacji UTC, dopiero potem oceniaj ryzyko." },
+  { id: "wind", title: "Wiatr", skill: "wind", level: "podstawy", goal: "Odczytuj kierunek, prędkość, sektor zmienny oraz różnicę między wiatrem stałym i porywami." },
+  { id: "visibility", title: "Widzialność", skill: "visibility", level: "praktyka", goal: "Zamieniaj metry, mile statutowe, CAVOK i RVR na praktyczną widzialność operacyjną." },
+  { id: "clouds", title: "Chmury i podstawa", skill: "clouds", level: "praktyka", goal: "Rozpoznawaj warstwy BKN/OVC/VV, podstawę chmur i oznaczenia chmur konwekcyjnych." },
+  { id: "weather", title: "Pogoda bieżąca", skill: "weather", level: "praktyka", goal: "Szybko wychwytuj TS, FG, FZ, SN, RA i inne grupy, które zmieniają decyzję o locie." },
+  { id: "altimeter", title: "Altimeter / QNH", skill: "altimeter", level: "podstawy", goal: "Poprawnie czytaj grupy Q i A, żeby bez pomyłki ustawić wysokościomierz." },
+  { id: "taf", title: "Trendy TAF", skill: "weather", level: "misja", goal: "Wykorzystuj TEMPO, BECMG, FM i PROB do briefingu zmian pogody w oknie misji." },
+  { id: "decision", title: "GO / Uwaga / NO-GO", skill: "clouds", level: "misja", goal: "Łącz tokeny METAR/TAF, lotnisko zapasowe i minima profilu w konserwatywną decyzję." },
 ];

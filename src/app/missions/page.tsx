@@ -6,7 +6,7 @@ import CockpitWeatherPanel from "@/components/metar/CockpitWeatherPanel";
 import PilotBriefingCard from "@/components/metar/PilotBriefingCard";
 import TafTimeline from "@/components/metar/TafTimeline";
 import { useLanguage } from "@/components/layout/LanguageProvider";
-import { buildPilotBriefing } from "@/lib/metar/briefing";
+import { buildPilotBriefing, skillLabel } from "@/lib/metar/briefing";
 import { metarExamples } from "@/lib/metar/examples";
 import { assessWeatherDecision } from "@/lib/decision/decisionEngine";
 import { recordProgressAnswer } from "@/lib/storage/progressStorage";
@@ -78,7 +78,7 @@ export default function MissionsPage() {
   const loadLiveMission = async () => {
     const normalized = station.trim().toUpperCase();
     if (!/^[A-Z]{4}$/.test(normalized)) {
-      setError(pl ? "Podaj poprawny 4-literowy kod ICAO." : "Enter a valid 4-letter ICAO code.");
+      setError(pl ? "Podaj poprawny czteroliterowy kod ICAO." : "Enter a valid 4-letter ICAO code.");
       return;
     }
 
@@ -109,9 +109,9 @@ export default function MissionsPage() {
 
   const shareMission = async () => {
     if (!assessment) return;
-    const text = `METAR Quest mission ${metar.station}: my call ${decision}, instructor ${assessment.expected}, score ${assessment.score}/100. Key token: ${assessment.keyToken}.`;
+    const text = `METAR Quest — misja ${metar.station}: moja decyzja ${decision}, instruktor ${assessment.expected}, wynik ${assessment.score}/100. Kluczowy token: ${assessment.keyToken}.`;
     try {
-      if (navigator.share) await navigator.share({ title: "METAR Quest mission", text });
+      if (navigator.share) await navigator.share({ title: "Misja METAR Quest", text });
       else await navigator.clipboard.writeText(text);
       setShareStatus(pl ? "Gotowe do udostępnienia." : "Ready to share.");
     } catch {
@@ -125,7 +125,7 @@ export default function MissionsPage() {
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
             <p className="inline-flex rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-cyan-100">
-              {pl ? "Live Mission Mode" : "Live Mission Mode"}
+              {pl ? "Misje na żywo" : "Misje na żywo"}
             </p>
             <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
               {pl ? "Podejmij decyzję jak pilot, nie jak uczestnik quizu." : "Make the call like a pilot, not a quiz taker."}
@@ -141,16 +141,16 @@ export default function MissionsPage() {
             </select>
             <p className="mt-3 text-sm text-slate-300">{profileCopy}</p>
             <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-              <input value={station} maxLength={4} onChange={(event) => setStation(event.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} className="min-w-0 rounded-xl border border-slate-600 bg-slate-950 px-3 py-3 font-mono text-white" placeholder="DEST EPWA" />
-              <input value={alternateStation} maxLength={4} onChange={(event) => setAlternateStation(event.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} className="min-w-0 rounded-xl border border-slate-600 bg-slate-950 px-3 py-3 font-mono text-white" placeholder="ALT EPKK" />
+              <input value={station} maxLength={4} onChange={(event) => setStation(event.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} className="min-w-0 rounded-xl border border-slate-600 bg-slate-950 px-3 py-3 font-mono text-white" placeholder="Docelowe EPWA" />
+              <input value={alternateStation} maxLength={4} onChange={(event) => setAlternateStation(event.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} className="min-w-0 rounded-xl border border-slate-600 bg-slate-950 px-3 py-3 font-mono text-white" placeholder="Zapasowe EPKK" />
               <button onClick={loadLiveMission} disabled={loading} className="rounded-xl bg-cyan-300 px-4 py-3 font-bold text-slate-950 disabled:opacity-60">{loading ? "..." : pl ? "Wczytaj" : "Load"}</button>
             </div>
             <div className="mt-3 flex gap-2">
-              <label className="text-xs font-bold uppercase tracking-wide text-slate-400">DEP Z<input type="number" min={0} max={23} value={departureHour} onChange={(event) => setDepartureHour(Number(event.target.value))} className="mt-1 block w-20 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-white" /></label>
-              <label className="text-xs font-bold uppercase tracking-wide text-slate-400">ARR Z<input type="number" min={0} max={23} value={arrivalHour} onChange={(event) => setArrivalHour(Number(event.target.value))} className="mt-1 block w-20 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-white" /></label>
+              <label className="text-xs font-bold uppercase tracking-wide text-slate-400">Odlot Z<input type="number" min={0} max={23} value={departureHour} onChange={(event) => setDepartureHour(Number(event.target.value))} className="mt-1 block w-20 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-white" /></label>
+              <label className="text-xs font-bold uppercase tracking-wide text-slate-400">Przylot Z<input type="number" min={0} max={23} value={arrivalHour} onChange={(event) => setArrivalHour(Number(event.target.value))} className="mt-1 block w-20 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-white" /></label>
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <button onClick={loadDailyMission} type="button" className="rounded-xl border border-cyan-300/40 px-4 py-2 text-sm font-bold text-cyan-100 hover:bg-cyan-500/10">{pl ? "Daily Mission" : "Daily Mission"}</button>
+              <button onClick={loadDailyMission} type="button" className="rounded-xl border border-cyan-300/40 px-4 py-2 text-sm font-bold text-cyan-100 hover:bg-cyan-500/10">{pl ? "Misja dnia" : "Daily Mission"}</button>
               <button onClick={generateScenario} type="button" className="rounded-xl border border-emerald-300/40 px-4 py-2 text-sm font-bold text-emerald-100 hover:bg-emerald-500/10">{pl ? "Scenariusz" : "Scenario"}</button>
             </div>
             {error && <p className="mt-3 text-sm text-rose-300">{error}</p>}
@@ -167,15 +167,15 @@ export default function MissionsPage() {
           <div className="mt-4"><TafTimeline taf={taf} language={language} departureHour={departureHour} arrivalHour={arrivalHour} /></div>
         </div>
         <div className="rounded-3xl border border-emerald-300/20 bg-emerald-500/10 p-5 shadow-xl">
-          <h2 className="text-xl font-bold">{pl ? "Plan B / alternate" : "Plan B / alternate"}</h2>
+          <h2 className="text-xl font-bold">{pl ? "Plan B / lotnisko zapasowe" : "Plan B / alternate"}</h2>
           {alternateMetar && alternateAssessment ? (
             <div className="mt-3 space-y-3 text-sm">
               <p className="font-mono">{alternateMetar.rawText}</p>
-              <p>{pl ? "Decyzja dla alternate:" : "Alternate call:"} <strong>{alternateAssessment.expected}</strong></p>
+              <p>{pl ? "Decyzja dla lotniska zapasowego:" : "Alternate call:"} <strong>{alternateAssessment.expected}</strong></p>
               <p>{alternateAssessment.primaryRisk}</p>
-              <p className="rounded-xl border border-white/10 bg-black/15 p-3">{alternateAssessment.expected === "GO" ? (pl ? "Alternate wygląda lepiej niż lotnisko docelowe, ale sprawdź paliwo i minima." : "Alternate currently looks usable; still verify fuel and minima.") : (pl ? "Alternate nie jest mocnym planem B — znajdź lepsze lotnisko." : "Alternate is not a strong Plan B — choose a better airport.")}</p>
+              <p className="rounded-xl border border-white/10 bg-black/15 p-3">{alternateAssessment.expected === "GO" ? (pl ? "Lotnisko zapasowe wygląda lepiej niż docelowe, ale sprawdź paliwo i minima." : "Alternate currently looks usable; still verify fuel and minima.") : (pl ? "Lotnisko zapasowe nie jest mocnym planem B — wybierz lepszą opcję." : "Alternate is not a strong Plan B — choose a better airport.")}</p>
             </div>
-          ) : <p className="mt-3 text-sm text-slate-400">{pl ? "Wczytaj misję live z kodem alternate, aby porównać ryzyko." : "Load a live mission with an alternate code to compare risk."}</p>}
+          ) : <p className="mt-3 text-sm text-slate-400">{pl ? "Wczytaj misję na żywo z kodem lotniska zapasowego, aby porównać ryzyko." : "Load a live mission with an alternate code to compare risk."}</p>}
         </div>
       </section>
 
@@ -189,7 +189,7 @@ export default function MissionsPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             {(["GO", "CAUTION", "NO-GO"] as const).map((item) => (
-              <button key={item} onClick={() => { setDecision(item); const result = assessWeatherDecision(profile, metar, item); recordProgressAnswer("local-user", "mission", result.trainingFocus, result.match); saveLeaderboardEntry("mission", result.score); }} className={`rounded-2xl px-5 py-3 font-black transition ${decision === item ? "bg-cyan-300 text-slate-950" : "border border-slate-600 bg-slate-900/60 text-white hover:border-cyan-300"}`}>{item}</button>
+              <button key={item} onClick={() => { setDecision(item); const result = assessWeatherDecision(profile, metar, item); recordProgressAnswer("local-user", "mission", result.trainingFocus, result.match); saveLeaderboardEntry("mission", result.score); }} className={`rounded-2xl px-5 py-3 font-black transition-all duration-200 active:scale-95 ${decision === item ? "bg-cyan-300 text-slate-950" : "border border-slate-600 bg-slate-900/60 text-white hover:border-cyan-300"}`}>{item}</button>
             ))}
           </div>
         </div>
@@ -198,7 +198,7 @@ export default function MissionsPage() {
           <div className={`mt-5 rounded-2xl border p-4 ${assessment.match ? "border-emerald-300/40 bg-emerald-400/10" : "border-amber-300/40 bg-amber-400/10"}`}>
             <p className="text-lg font-bold">{assessment.match ? (pl ? "Świetna decyzja." : "Great call.") : (pl ? "Sprawdź briefing jeszcze raz." : "Review the briefing again.")} <span className="text-sm font-semibold">{assessment.score}/100</span></p>
             <p className="mt-2 text-sm text-slate-200">
-              {pl ? "Decyzja instruktora:" : "Instructor call:"} <strong>{assessment.expected}</strong>. {pl ? "Token krytyczny:" : "Critical token:"} <strong className="font-mono">{assessment.keyToken}</strong>.
+              {pl ? "Decyzja instruktora:" : "Instructor call:"} <strong>{assessment.expected}</strong>. {pl ? "Kluczowy token:" : "Critical token:"} <strong className="font-mono">{assessment.keyToken}</strong>.
             </p>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               {assessment.risks.map((risk) => <p key={risk.id} className="rounded-xl border border-white/10 bg-black/15 p-3 text-sm"><strong>{risk.token}</strong><br />{risk.message}</p>)}
@@ -208,7 +208,7 @@ export default function MissionsPage() {
               <ul className="mt-2 list-disc space-y-1 pl-5">
                 {assessment.whatWouldImprove.map((item) => <li key={item}>{item}</li>)}
               </ul>
-              <p className="mt-2">{pl ? "Trening" : "Training"}: <strong>{assessment.trainingFocus}</strong></p>
+              <p className="mt-2">{pl ? "Trening" : "Training"}: <strong>{skillLabel(assessment.trainingFocus)}</strong></p>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link href={`/quiz?skill=${encodeURIComponent(assessment.trainingFocus === "taf" ? "weather" : assessment.trainingFocus)}`} className="inline-flex rounded-xl bg-indigo-500 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-400">
