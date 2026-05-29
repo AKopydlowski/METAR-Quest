@@ -56,3 +56,27 @@ export function clearProgress(userId: string, mode: ProgressMode): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(getProgressStorageKey(userId, mode));
 }
+
+
+export function exportProgressBundle(userId = "local-user"): string {
+  if (typeof window === "undefined") return "{}";
+  const keys = Object.keys(window.localStorage).filter((key) => key.startsWith(PREFIX) || key.startsWith("metar-quest:leaderboard") || key.startsWith("metar-quest:daily"));
+  const data = Object.fromEntries(keys.map((key) => [key, window.localStorage.getItem(key)]));
+  return JSON.stringify({ version: 1, userId, exportedAt: new Date().toISOString(), data }, null, 2);
+}
+
+export function importProgressBundle(bundle: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const parsed = JSON.parse(bundle) as { data?: Record<string, string | null> };
+    if (!parsed.data) return false;
+    Object.entries(parsed.data).forEach(([key, value]) => {
+      if ((key.startsWith(PREFIX) || key.startsWith("metar-quest:leaderboard") || key.startsWith("metar-quest:daily")) && value !== null) {
+        window.localStorage.setItem(key, value);
+      }
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}

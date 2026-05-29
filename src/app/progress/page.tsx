@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { ChangeEvent, useState } from "react";
 import Link from "next/link";
-import { loadProgress } from "@/lib/storage/progressStorage";
+import { exportProgressBundle, importProgressBundle, loadProgress } from "@/lib/storage/progressStorage";
 import { getAchievements, loadLeaderboard } from "@/lib/storage/gameStorage";
 import { buildTrainingPlan, getPilotRank } from "@/lib/metar/briefing";
 import { useLanguage } from "@/components/layout/LanguageProvider";
@@ -16,9 +16,10 @@ function skillAccuracy(skill: SkillProgress) {
 export default function ProgressPage() {
   const { t, language } = useLanguage();
   const pl = language === "pl";
-  const quizProgress = useMemo(() => loadProgress("local-user", "quiz"), []);
-  const timeAttackProgress = useMemo(() => loadProgress("local-user", "time-attack"), []);
-  const leaderboard = useMemo(() => loadLeaderboard(), []);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const quizProgress = loadProgress("local-user", "quiz");
+  const timeAttackProgress = loadProgress("local-user", "time-attack");
+  const leaderboard = loadLeaderboard();
   const quizAccuracy = quizProgress && quizProgress.totalAnswered > 0 ? Math.round((quizProgress.totalCorrect / quizProgress.totalAnswered) * 100) : 0;
   const timeAttackAccuracy = timeAttackProgress && timeAttackProgress.totalAnswered > 0 ? Math.round((timeAttackProgress.totalCorrect / timeAttackProgress.totalAnswered) * 100) : 0;
   const bestTimeAttack = Math.max(...leaderboard.filter((x) => x.mode === "time-attack").map((x) => x.score), 0);
@@ -40,6 +41,24 @@ export default function ProgressPage() {
   const rank = getPilotRank({ totalAnswered, accuracy: blendedAccuracy, bestTimeAttack });
   const trainingPlan = buildTrainingPlan(skills);
   const shareText = `METAR Quest — ${rank.rank}: ${blendedAccuracy}% accuracy, ${totalAnswered} answers, best Time Attack ${bestTimeAttack}.`;
+
+  const exportProgress = () => {
+    const blob = new Blob([exportProgressBundle()], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "metar-quest-progress.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importProgress = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const ok = importProgressBundle(await file.text());
+    setImportStatus(ok ? (pl ? "Zaimportowano postęp." : "Progress imported.") : (pl ? "Nie udało się zaimportować pliku." : "Could not import file."));
+    if (ok) window.location.reload();
+  };
 
   return (
     <div className="w-full space-y-5">
@@ -101,6 +120,19 @@ export default function ProgressPage() {
           </div>
         ) : <p className="mt-2 text-sm">{pl ? "Brak danych — zacznij od quizu albo Time Attack." : "No skill data yet — start with Quiz or Time Attack."}</p>}
         {weakest && <p className="mt-4 rounded-xl bg-amber-400/10 p-3 text-sm"><strong>{t("recommendedPractice")}:</strong> focus on {weakest.skillTag} questions first.</p>}
+      </section>
+
+      <section className="rounded-3xl border border-sky-300/20 bg-sky-500/10 p-5 shadow-xl">
+        <h2 className="text-xl font-bold">{pl ? "Eksport / import postępu" : "Export / import progress"}</h2>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">{pl ? "Przenieś lokalny profil na inne urządzenie bez konta w chmurze." : "Move your local profile to another device without a cloud account."}</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button onClick={exportProgress} className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-black text-slate-950">{pl ? "Eksportuj JSON" : "Export JSON"}</button>
+          <label className="cursor-pointer rounded-xl border border-cyan-300/40 px-4 py-2 text-sm font-bold text-cyan-200">
+            {pl ? "Importuj JSON" : "Import JSON"}
+            <input type="file" accept="application/json" onChange={importProgress} className="hidden" />
+          </label>
+        </div>
+        {importStatus && <p className="mt-3 text-sm">{importStatus}</p>}
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">

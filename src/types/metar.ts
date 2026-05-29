@@ -11,10 +11,11 @@ export interface MetarVisibility {
   statuteMiles: number;
   raw: string;
   cavok?: boolean;
+  modifier?: "P" | "M";
 }
 
 export interface MetarCloudLayer {
-  coverage: "SKC" | "CLR" | "FEW" | "SCT" | "BKN" | "OVC" | "VV" | "NCD";
+  coverage: "SKC" | "CLR" | "FEW" | "SCT" | "BKN" | "OVC" | "VV" | "NCD" | "NSC";
   baseFtAgl?: number;
   cloudType?: "CB" | "TCU";
 }
@@ -45,6 +46,7 @@ export interface MetarWeatherPhenomenon {
 }
 
 export interface ParsedMetar {
+  reportType?: "METAR" | "SPECI";
   station: string;
   observedAt?: string;
   rawText: string;

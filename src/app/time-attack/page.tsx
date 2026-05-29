@@ -10,10 +10,11 @@ import { useLanguage } from "@/components/layout/LanguageProvider";
 export default function TimeAttackPage() {
   const { t, language } = useLanguage();
   const pl = language === "pl";
-  const localQuestions = useMemo(() => buildQuestionBank(), []);
+  const localQuestions = useMemo(() => buildQuestionBank(language), [language]);
   const [questions, setQuestions] = useState<QuizQuestion[]>(localQuestions.slice(0, 10));
   const [source, setSource] = useState("local");
   const [duration, setDuration] = useState(60);
+  const [proMode, setProMode] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [isPaused, setIsPaused] = useState(false);
   const [index, setIndex] = useState(0);
@@ -62,12 +63,14 @@ export default function TimeAttackPage() {
     if (isCorrect) {
       const nextCombo = combo + 1;
       const multiplier = nextCombo >= 10 ? 3 : nextCombo >= 5 ? 2 : 1;
-      setScore((s) => s + multiplier);
+      const speedBonus = timeLeft > duration * 0.75 ? 1 : 0;
+      setScore((s) => s + multiplier + speedBonus);
       setCorrect((n) => n + 1);
       setCombo(nextCombo);
       setBestCombo((prev) => Math.max(prev, nextCombo));
     } else {
       setCombo(0);
+      if (proMode) setTimeLeft((time) => Math.max(0, time - 3));
     }
 
     recordProgressAnswer("local-user", "time-attack", q.skillTag, isCorrect);
@@ -119,9 +122,12 @@ export default function TimeAttackPage() {
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs uppercase text-slate-400">Combo</p><p className="text-3xl font-black">{combo}🔥</p></div>
           <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4"><p className="text-xs uppercase text-cyan-200">Multiplier</p><p className="text-3xl font-black">x{multiplier}</p></div>
         </div>
-        <button onClick={() => setIsPaused((paused) => !paused)} disabled={isFinished} className="mt-4 rounded-xl border border-sky-300/40 px-4 py-2 text-sm font-semibold disabled:opacity-50">
-          {isPaused ? t("resume") : t("pause")}
-        </button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button onClick={() => setIsPaused((paused) => !paused)} disabled={isFinished} className="rounded-xl border border-sky-300/40 px-4 py-2 text-sm font-semibold disabled:opacity-50">
+            {isPaused ? t("resume") : t("pause")}
+          </button>
+          <button onClick={() => setProMode((value) => !value)} className={`rounded-xl border px-4 py-2 text-sm font-semibold ${proMode ? "border-rose-300 bg-rose-500/20 text-rose-100" : "border-slate-500"}`}>Pro mode {proMode ? "ON" : "OFF"}</button>
+        </div>
       </section>
 
       <section className="rounded-[2rem] border border-slate-500/30 bg-[var(--surface)]/90 p-6 shadow-xl">
@@ -135,6 +141,7 @@ export default function TimeAttackPage() {
               <div className="rounded-xl border p-3"><p className="text-xs uppercase">{t("answers")}</p><p className="text-xl font-semibold">{answered}</p></div>
             </div>
             <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/10 p-4"><p className="text-xs uppercase tracking-[0.2em] text-cyan-300">Share card</p><p className="mt-2 font-mono text-sm">METAR Quest Time Attack: {score} pts, {accuracy}% accuracy, {bestCombo} best combo, rank {rank}.</p></div>
+            {accuracy === 100 && answered > 0 && <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4 text-sm font-bold">🏅 Perfect streak badge unlocked</div>}
             <button onClick={() => restartRound()} className="rounded-xl bg-sky-500 px-4 py-2 font-semibold text-slate-950 hover:bg-sky-400">{t("playAgain")}</button>
           </div>
         ) : isPaused ? (

@@ -9,12 +9,15 @@ import type { QuestionDifficulty, QuizChoice } from "@/types/quiz";
 
 const QUIZ_LENGTH = 10;
 type DifficultyFilter = "all" | QuestionDifficulty;
-type QuizMode = "classic" | "daily" | "endless";
+type QuizMode = "classic" | "daily" | "endless" | "exam" | "weak";
+const SKILLS = ["wind", "visibility", "clouds", "altimeter", "temperature", "weather"] as const;
 
 export default function QuizPage() {
   const { t, language } = useLanguage();
+  const initialSkill = typeof window === "undefined" ? "all" : new URLSearchParams(window.location.search).get("skill") ?? "all";
+  const [skillFilter, setSkillFilter] = useState<string>(SKILLS.includes(initialSkill as typeof SKILLS[number]) ? initialSkill : "all");
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>("all");
-  const [mode, setMode] = useState<QuizMode>("classic");
+  const [mode, setMode] = useState<QuizMode>(initialSkill === "all" ? "classic" : "weak");
   const [streak, setStreak] = useState(0);
   const [hintsLeft, setHintsLeft] = useState(3);
   const [hint, setHint] = useState<string | null>(null);
@@ -25,16 +28,17 @@ export default function QuizPage() {
   const [showResult, setShowResult] = useState(false);
 
 
-  const allQuestions = useMemo(() => buildQuestionBank(), []);
+  const allQuestions = useMemo(() => buildQuestionBank(language), [language]);
   const filtered = useMemo(
-    () => allQuestions.filter((q) => difficultyFilter === "all" || q.difficulty === difficultyFilter),
-    [allQuestions, difficultyFilter],
+    () => allQuestions.filter((q) => (difficultyFilter === "all" || q.difficulty === difficultyFilter) && (skillFilter === "all" || q.skillTag === skillFilter)),
+    [allQuestions, difficultyFilter, skillFilter],
   );
   const dailySeed = new Date().toISOString().slice(0, 10).split("-").join("");
   const startIdx = Number(dailySeed) % Math.max(filtered.length, 1);
   const questions = useMemo(() => {
     if (mode === "daily") return [...filtered.slice(startIdx), ...filtered.slice(0, startIdx)].slice(0, QUIZ_LENGTH);
-    if (mode === "endless") return filtered;
+    if (mode === "endless" || mode === "weak") return filtered;
+    if (mode === "exam") return [...filtered.slice(startIdx), ...filtered.slice(0, startIdx)].slice(0, 25);
     return filtered.slice(0, QUIZ_LENGTH);
   }, [filtered, mode, startIdx]);
 
@@ -70,7 +74,7 @@ export default function QuizPage() {
   };
 
   const next = () => {
-    if (mode !== "endless" && current >= questions.length - 1) {
+    if (!["endless", "weak"].includes(mode) && current >= questions.length - 1) {
       saveLeaderboardEntry("quiz", score);
       if (mode === "daily") saveDailyChallenge({ date: new Date().toISOString().slice(0, 10), score, total: questions.length });
       setShowResult(true);
@@ -83,7 +87,7 @@ export default function QuizPage() {
   };
 
   const useHint = () => {
-    if (hintsLeft <= 0 || answered || !q) return;
+    if (mode === "exam" || hintsLeft <= 0 || answered || !q) return;
     setHintsLeft((h) => h - 1);
     const wrong = q.choices.find((c) => !c.isCorrect);
     setHint(wrong ? `${language === "pl" ? "To na pewno nie jest" : "This is definitely not"}: ${wrong.label}` : null);
@@ -93,7 +97,7 @@ export default function QuizPage() {
     return (
       <main className="min-h-screen p-6">
         <section className="mx-auto max-w-4xl rounded-3xl border border-sky-200/20 bg-[var(--surface)]/80 p-6">
-          <h1 className="text-3xl font-bold">METAR Quiz</h1>
+          <h1 className="text-3xl font-bold">{mode === "exam" ? (language === "pl" ? "Egzamin METAR" : "METAR Exam") : "METAR Quiz"}</h1>
           <p className="mt-3 text-sm text-slate-300">No questions are available for this filter.</p>
         </section>
       </main>
@@ -105,19 +109,28 @@ export default function QuizPage() {
       <section className="mx-auto max-w-4xl rounded-3xl border border-sky-200/20 bg-[var(--surface)]/80 p-6 shadow-lg">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">METAR Quiz</h1>
-            <p className="mt-1 text-sm">{t("score")}: {score} | {t("streak")}: {streak} | {t("hints")}: {hintsLeft}</p>
+            <h1 className="text-3xl font-bold">{mode === "exam" ? (language === "pl" ? "Egzamin METAR" : "METAR Exam") : "METAR Quiz"}</h1>
+            <p className="mt-1 text-sm">{t("score")}: {score} | {t("streak")}: {streak} | {mode === "exam" ? (language === "pl" ? "bez podpowiedzi" : "no hints") : `${t("hints")}: ${hintsLeft}`}</p>
           </div>
-          <label className="text-sm">
-            <span className="mb-1 block text-xs uppercase tracking-wide text-slate-400">{t("difficulty")}</span>
-            <select value={difficultyFilter} onChange={(event) => { setDifficultyFilter(event.target.value as DifficultyFilter); resetSession(); }} className="rounded border border-slate-500 bg-slate-900 px-3 py-2 text-sm">
-              {(["all", "easy", "medium", "hard"] as const).map((level) => <option key={level} value={level}>{t(level)}</option>)}
-            </select>
-          </label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="text-sm">
+              <span className="mb-1 block text-xs uppercase tracking-wide text-slate-400">{t("difficulty")}</span>
+              <select value={difficultyFilter} onChange={(event) => { setDifficultyFilter(event.target.value as DifficultyFilter); resetSession(); }} className="w-full rounded border border-slate-500 bg-slate-900 px-3 py-2 text-sm">
+                {(["all", "easy", "medium", "hard"] as const).map((level) => <option key={level} value={level}>{t(level)}</option>)}
+              </select>
+            </label>
+            <label className="text-sm">
+              <span className="mb-1 block text-xs uppercase tracking-wide text-slate-400">{language === "pl" ? "Umiejętność" : "Skill"}</span>
+              <select value={skillFilter} onChange={(event) => { setSkillFilter(event.target.value); resetSession(); }} className="w-full rounded border border-slate-500 bg-slate-900 px-3 py-2 text-sm">
+                <option value="all">{t("all")}</option>
+                {SKILLS.map((skill) => <option key={skill} value={skill}>{skill}</option>)}
+              </select>
+            </label>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {(["classic", "daily", "endless"] as const).map((m) => (
+          {(["classic", "daily", "endless", "weak", "exam"] as const).map((m) => (
             <button key={m} onClick={() => { setMode(m); resetSession(); }} className={`rounded px-3 py-1 ${mode === m ? "bg-cyan-400 text-slate-900" : "bg-slate-700 text-white"}`}>{m}</button>
           ))}
         </div>
@@ -169,7 +182,7 @@ export default function QuizPage() {
         )}
 
         <div className="mt-4 flex gap-2">
-          <button onClick={useHint} disabled={answered || hintsLeft <= 0} className="rounded bg-amber-400 px-3 py-1 text-slate-900 disabled:opacity-50">{t("hint")}</button>
+          <button onClick={useHint} disabled={mode === "exam" || answered || hintsLeft <= 0} className="rounded bg-amber-400 px-3 py-1 text-slate-900 disabled:opacity-50">{t("hint")}</button>
           <button onClick={next} disabled={!answered} className="rounded bg-cyan-400 px-3 py-1 text-slate-900 disabled:opacity-50">{t("next")}</button>
         </div>
       </section>
@@ -177,7 +190,8 @@ export default function QuizPage() {
         <div className="fixed inset-0 flex items-center justify-center bg-black/60 p-4">
           <div className="rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
             <p className="text-xl font-semibold">{t("result")}: {score}</p>
-            <p className="mt-1 text-sm text-slate-300">{t("answers")}: {mode === "endless" ? current + 1 : questions.length}</p>
+            <p className="mt-1 text-sm text-slate-300">{t("answers")}: {mode === "endless" || mode === "weak" ? current + 1 : questions.length}</p>
+            {mode === "exam" && <p className="mt-1 text-sm text-slate-300">{language === "pl" ? "Próg zaliczenia" : "Pass mark"}: 80% • {score >= Math.ceil(questions.length * 0.8) ? "✅" : "❌"}</p>}
             <button className="mt-4 rounded bg-cyan-400 px-3 py-1 text-slate-900" onClick={resetSession}>{t("playAgain")}</button>
           </div>
         </div>

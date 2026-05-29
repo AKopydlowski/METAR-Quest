@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import CockpitWeatherPanel from "@/components/metar/CockpitWeatherPanel";
 import PilotBriefingCard from "@/components/metar/PilotBriefingCard";
 import { useLanguage } from "@/components/layout/LanguageProvider";
+import { parseTafTimeline } from "@/lib/metar/taf";
 import type { ParsedMetar } from "@/types/metar";
 
 interface ApiResponse {
@@ -14,7 +15,28 @@ interface ApiResponse {
 }
 
 const HISTORY_KEY = "metar-quest:weather-history";
-const QUICK_STATIONS = ["EPWA", "EPPO", "KJFK", "EGLL"];
+const FAVORITES_KEY = "metar-quest:favorite-stations";
+const QUICK_STATIONS = ["EPWA", "EPKK", "EPPO", "EPGD", "EPWR", "KJFK", "EGLL"];
+const AIRPORTS = [
+  { code: "EPWA", city: "Warsaw", x: 54, y: 42 },
+  { code: "EPKK", city: "Kraków", x: 55, y: 64 },
+  { code: "EPPO", city: "Poznań", x: 36, y: 48 },
+  { code: "EPGD", city: "Gdańsk", x: 47, y: 18 },
+  { code: "EPWR", city: "Wrocław", x: 35, y: 65 },
+  { code: "KJFK", city: "New York", x: 16, y: 54 },
+  { code: "EGLL", city: "London", x: 43, y: 50 },
+];
+
+function loadStringList(key: string): string[] {
+  if (typeof window === "undefined") return [];
+  const saved = window.localStorage.getItem(key);
+  if (!saved) return [];
+  try {
+    return JSON.parse(saved) as string[];
+  } catch {
+    return [];
+  }
+}
 
 export default function RealWeatherPage() {
   const { t, language } = useLanguage();
@@ -22,17 +44,23 @@ export default function RealWeatherPage() {
   const [station, setStation] = useState("");
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [history, setHistory] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    const saved = window.localStorage.getItem(HISTORY_KEY);
-    return saved ? (JSON.parse(saved) as string[]) : [];
-  });
+  const [history, setHistory] = useState<string[]>(() => loadStringList(HISTORY_KEY));
+  const [favorites, setFavorites] = useState<string[]>(() => loadStringList(FAVORITES_KEY));
   const [error, setError] = useState<string | null>(null);
+  const tafTimeline = useMemo(() => parseTafTimeline(data?.taf), [data?.taf]);
 
   const rememberStation = (code: string) => {
-    const next = [code, ...history.filter((item) => item !== code)].slice(0, 6);
+    const next = [code, ...history.filter((item) => item !== code)].slice(0, 8);
     setHistory(next);
     window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+  };
+
+  const toggleFavorite = (code: string) => {
+    const normalized = code.trim().toUpperCase();
+    if (!/^[A-Z]{4}$/.test(normalized)) return;
+    const next = favorites.includes(normalized) ? favorites.filter((item) => item !== normalized) : [normalized, ...favorites].slice(0, 12);
+    setFavorites(next);
+    window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
   };
 
   const loadWeather = async (code = station) => {
@@ -63,6 +91,8 @@ export default function RealWeatherPage() {
     void loadWeather();
   };
 
+  const stationButtons = [...favorites, ...QUICK_STATIONS, ...history].filter((item, index, arr) => arr.indexOf(item) === index);
+
   return (
     <div className="w-full space-y-5">
       <section className="rounded-[2rem] border border-sky-300/20 bg-slate-950/75 p-6 text-white shadow-2xl shadow-sky-950/30">
@@ -71,7 +101,7 @@ export default function RealWeatherPage() {
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">{t("weatherSource")}</p>
             <h1 className="mt-2 text-4xl font-black">{pl ? "Live briefing pogodowy" : "Live weather briefing"}</h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-300">
-              {pl ? "Wczytaj realny METAR/TAF i zobacz interpretację w formie kokpitu: kategoria, token krytyczny, ryzyko i rekomendowany trening." : "Load real METAR/TAF and get a cockpit-style interpretation: category, critical token, risk and recommended practice."}
+              {pl ? "Wczytaj METAR/TAF, zapisz ulubione lotniska i zobacz TAF jako oś czasu ryzyka." : "Load METAR/TAF, save favorite airports and review TAF as a risk timeline."}
             </p>
           </div>
           <form onSubmit={onSubmit} className="flex min-w-0 gap-2">
@@ -83,12 +113,37 @@ export default function RealWeatherPage() {
               placeholder={pl ? "ICAO, np. EPPO" : "ICAO, e.g. KJFK"}
             />
             <button className="rounded-xl bg-cyan-300 px-5 py-3 font-bold text-slate-950 disabled:opacity-50" disabled={loading || !station.trim()}>{loading ? t("loading") : t("load")}</button>
+            <button type="button" onClick={() => toggleFavorite(station)} className="rounded-xl border border-cyan-300/40 px-4 py-3 font-bold text-cyan-100">★</button>
           </form>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {[...QUICK_STATIONS, ...history].filter((item, index, arr) => arr.indexOf(item) === index).map((code) => (
-            <button key={code} onClick={() => void loadWeather(code)} className="rounded-full border border-cyan-300/30 px-3 py-1 text-xs font-bold text-cyan-100 hover:bg-cyan-500/10">{code}</button>
+          {stationButtons.map((code) => (
+            <button key={code} onClick={() => void loadWeather(code)} className="rounded-full border border-cyan-300/30 px-3 py-1 text-xs font-bold text-cyan-100 hover:bg-cyan-500/10">{favorites.includes(code) ? "★ " : ""}{code}</button>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-slate-500/30 bg-[var(--surface)]/90 p-5 shadow-xl">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold">{pl ? "Mapa szybkiego wyboru" : "Quick airport map"}</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-300">{pl ? "Kliknij lotnisko, aby pobrać bieżące warunki." : "Click an airport to fetch current conditions."}</p>
+          </div>
+          <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-300">{favorites.length} ★</span>
+        </div>
+        <div className="relative mt-4 h-64 overflow-hidden rounded-3xl border border-sky-300/20 bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.22),rgba(15,23,42,0.92))]">
+          <div className="absolute inset-6 rounded-[2rem] border border-white/10" />
+          {AIRPORTS.map((airport) => (
+            <button
+              key={airport.code}
+              onClick={() => void loadWeather(airport.code)}
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-cyan-300/40 bg-slate-950/80 px-3 py-2 text-left text-xs text-white shadow-lg hover:bg-cyan-500/30"
+              style={{ left: `${airport.x}%`, top: `${airport.y}%` }}
+            >
+              <span className="block font-mono font-black">{airport.code}</span>
+              <span className="text-slate-300">{airport.city}</span>
+            </button>
           ))}
         </div>
       </section>
@@ -104,13 +159,33 @@ export default function RealWeatherPage() {
             <p><strong>Raw:</strong> <span className="font-mono text-sm">{data.metar.rawText}</span></p>
             <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
               <p><strong>Category:</strong> {data.metar.flightCategory ?? "Unknown"}</p>
-              <p><strong>Visibility:</strong> {data.metar.visibility?.statuteMiles ?? "?"} SM</p>
+              <p><strong>Visibility:</strong> {data.metar.visibility?.raw ?? "?"} ({data.metar.visibility?.statuteMiles ?? "?"} SM)</p>
               <p><strong>Wind:</strong> {data.metar.wind ? `${data.metar.wind.direction ?? "VRB"}° ${data.metar.wind.speedKt}KT${data.metar.wind.gustKt ? ` G${data.metar.wind.gustKt}` : ""}` : "Unknown"}</p>
               <p><strong>Temp/Dew:</strong> {data.metar.temperature ? `${data.metar.temperature.celsius}/${data.metar.temperature.dewpointCelsius}°C` : "Unknown"}</p>
               <p><strong>Weather:</strong> {data.metar.weatherCodes?.length ? data.metar.weatherCodes.join(", ") : "None"}</p>
               <p><strong>Trend:</strong> {data.metar.trend?.length ? data.metar.trend.join(", ") : "None"}</p>
             </div>
-            {data.taf && <div className="mt-4 rounded-xl border border-indigo-300/30 bg-indigo-500/10 p-3"><p className="font-semibold">TAF</p><p className="mt-1 whitespace-pre-wrap font-mono text-xs">{data.taf}</p></div>}
+          </section>
+
+          <section className="rounded-3xl border border-indigo-300/20 bg-indigo-500/10 p-5 shadow-xl">
+            <h2 className="text-xl font-bold">{pl ? "Oś czasu TAF" : "TAF timeline"}</h2>
+            {tafTimeline.length ? (
+              <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                {tafTimeline.map((segment) => (
+                  <article key={segment.id} className="rounded-2xl border border-white/10 bg-black/15 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-bold">{segment.label}</p>
+                      <span className={`rounded-full px-2 py-1 text-xs font-black ${segment.risk === "high" ? "bg-rose-500/20 text-rose-200" : segment.risk === "medium" ? "bg-amber-500/20 text-amber-200" : "bg-emerald-500/20 text-emerald-200"}`}>{segment.risk}</span>
+                    </div>
+                    <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">{segment.window}</p>
+                    <p className="mt-2 text-sm">{segment.summary}</p>
+                    <p className="mt-3 font-mono text-xs text-slate-400">{segment.raw}</p>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm">{pl ? "Brak TAF dla tej stacji." : "No TAF returned for this station."}</p>
+            )}
           </section>
         </>
       )}
