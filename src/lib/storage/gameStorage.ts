@@ -66,11 +66,11 @@ export function loadDailyChallenge(): DailyChallengeRecord | null {
 
 export function getAchievements(stats: { quizAccuracy: number; totalAnswered: number; bestTimeAttack: number }): Achievement[] {
   return [
-    { id: "first-steps", name: "First Steps", unlocked: stats.totalAnswered >= 10 },
-    { id: "metar-master", name: "METAR Master", unlocked: stats.quizAccuracy >= 80 },
-    { id: "speedster", name: "Speedster", unlocked: stats.bestTimeAttack >= 8 },
-    { id: "crosswind-spotter", name: "Crosswind Spotter", unlocked: stats.totalAnswered >= 25 && stats.bestTimeAttack >= 12 },
-    { id: "ifr-ceiling-hunter", name: "IFR Ceiling Hunter", unlocked: stats.quizAccuracy >= 85 && stats.totalAnswered >= 40 },
-    { id: "daily-dispatch", name: "Daily Dispatch", unlocked: stats.totalAnswered >= 60 },
+    { id: "first-steps", name: "Pierwsze kroki", unlocked: stats.totalAnswered >= 10 },
+    { id: "metar-master", name: "Mistrz METAR", unlocked: stats.quizAccuracy >= 80 },
+    { id: "speedster", name: "Szybki dekoder", unlocked: stats.bestTimeAttack >= 8 },
+    { id: "crosswind-spotter", name: "Łowca wiatru bocznego", unlocked: stats.totalAnswered >= 25 && stats.bestTimeAttack >= 12 },
+    { id: "ifr-ceiling-hunter", name: "Łowca podstaw IFR", unlocked: stats.quizAccuracy >= 85 && stats.totalAnswered >= 40 },
+    { id: "daily-dispatch", name: "Codzienny briefing", unlocked: stats.totalAnswered >= 60 },
   ];
 }

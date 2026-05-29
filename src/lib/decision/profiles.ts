@@ -23,10 +23,10 @@ export type PilotProfileDefinition = {
 export const PILOT_PROFILES: Record<MissionProfile, PilotProfileDefinition> = {
   "student-vfr": {
     id: "student-vfr",
-    label: "Student VFR solo",
+    label: "Uczeń VFR solo",
     en: "Student VFR solo: conservative decision-making, avoid marginal or instrument weather.",
     pl: "Uczeń VFR solo: decyzja konserwatywna, unikaj pogody marginalnej i instrumentalnej.",
-    persona: "new student",
+    persona: "uczeń pilot",
     minima: {
       minimumVisibilitySm: 5,
       minimumCeilingFt: 2500,
@@ -39,10 +39,10 @@ export const PILOT_PROFILES: Record<MissionProfile, PilotProfileDefinition> = {
   },
   "ppl-vfr": {
     id: "ppl-vfr",
-    label: "PPL VFR cross-country",
+    label: "PPL VFR — trasa",
     en: "PPL VFR cross-country: accept good VFR, flag marginal visibility, ceiling, gusts and convective weather.",
     pl: "PPL VFR trasa: akceptuj dobrą VFR, oznacz marginalną widzialność, podstawę, porywy i konwekcję.",
-    persona: "licensed VFR pilot",
+    persona: "pilot VFR",
     minima: {
       minimumVisibilitySm: 3,
       minimumCeilingFt: 1500,
@@ -55,10 +55,10 @@ export const PILOT_PROFILES: Record<MissionProfile, PilotProfileDefinition> = {
   },
   "ifr-brief": {
     id: "ifr-brief",
-    label: "IFR briefing",
+    label: "Briefing IFR",
     en: "IFR briefing: identify operational threats before the approach briefing.",
     pl: "Briefing IFR: rozpoznaj zagrożenia operacyjne przed podejściem.",
-    persona: "instrument trainee",
+    persona: "uczeń IFR",
     minima: {
       minimumVisibilitySm: 1,
       minimumCeilingFt: 500,
@@ -71,10 +71,10 @@ export const PILOT_PROFILES: Record<MissionProfile, PilotProfileDefinition> = {
   },
   "night-cross-country": {
     id: "night-cross-country",
-    label: "Night cross-country",
+    label: "Nocna trasa",
     en: "Night cross-country: raise the bar for visibility, ceiling and gusts.",
     pl: "Nocna trasa: podnieś wymagania wobec widzialności, podstawy i porywów.",
-    persona: "night VFR pilot",
+    persona: "pilot nocny VFR",
     minima: {
       minimumVisibilitySm: 6,
       minimumCeilingFt: 3000,

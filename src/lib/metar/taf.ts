@@ -49,26 +49,26 @@ function extractTokens(raw: string): TafTimelineSegment["tokens"] {
 function summarize(raw: string): string {
   const tokens = extractTokens(raw);
   const parts: string[] = [];
-  if (tokens.wind) parts.push(`wind ${tokens.wind}`);
-  if (tokens.visibility) parts.push(`visibility ${tokens.visibility}`);
-  if (tokens.weather.length) parts.push(`weather ${tokens.weather.join(", ")}`);
-  if (tokens.clouds.length) parts.push(`clouds ${tokens.clouds.join(", ")}`);
-  return parts.length ? parts.join(" • ") : "no major change tokens detected";
+  if (tokens.wind) parts.push(`wiatr ${tokens.wind}`);
+  if (tokens.visibility) parts.push(`widzialność ${tokens.visibility}`);
+  if (tokens.weather.length) parts.push(`pogoda ${tokens.weather.join(", ")}`);
+  if (tokens.clouds.length) parts.push(`chmury ${tokens.clouds.join(", ")}`);
+  return parts.length ? parts.join(" • ") : "brak istotnych tokenów zmiany";
 }
 
 function labelFor(token: string, index: number): Pick<TafTimelineSegment, "kind" | "label"> {
-  if (token.startsWith("FM")) return { kind: "from", label: `From day ${token.slice(2, 4)} ${token.slice(4, 6)}:${token.slice(6, 8)}Z` };
-  if (token === "TEMPO") return { kind: "temporary", label: "Temporary change" };
-  if (token === "BECMG") return { kind: "becoming", label: "Becoming" };
-  if (token.startsWith("PROB")) return { kind: "probability", label: `${token.slice(4)}% probability` };
-  return { kind: "base", label: index === 0 ? "Base forecast" : "Forecast period" };
+  if (token.startsWith("FM")) return { kind: "from", label: `Od dnia ${token.slice(2, 4)} ${token.slice(4, 6)}:${token.slice(6, 8)}Z` };
+  if (token === "TEMPO") return { kind: "temporary", label: "Zmiana chwilowa" };
+  if (token === "BECMG") return { kind: "becoming", label: "Stopniowa zmiana" };
+  if (token.startsWith("PROB")) return { kind: "probability", label: `${token.slice(4)}% prawdopodobieństwa` };
+  return { kind: "base", label: index === 0 ? "Prognoza bazowa" : "Okres prognozy" };
 }
 
 function parseWindow(marker: string, raw: string) {
   const range = raw.match(/\b(\d{4})\/(\d{4})\b/);
   if (range) return { window: `${range[1]}/${range[2]}`, startsAt: range[1], endsAt: range[2] };
-  if (marker.startsWith("FM")) return { window: `from ${marker.slice(2)}`, startsAt: marker.slice(2), endsAt: undefined };
-  return { window: "active window", startsAt: undefined, endsAt: undefined };
+  if (marker.startsWith("FM")) return { window: `od ${marker.slice(2)}`, startsAt: marker.slice(2), endsAt: undefined };
+  return { window: "aktywne okno", startsAt: undefined, endsAt: undefined };
 }
 
 export function parseTafTimeline(taf?: string | null): TafTimelineSegment[] {
@@ -121,7 +121,7 @@ export function assessTafMissionWindow(taf: string | null | undefined, departure
   const highestRisk = segments.reduce<TafTimelineSegment["risk"]>((max, segment) => (RISK_WEIGHT[segment.risk] > RISK_WEIGHT[max] ? segment.risk : max), "low");
   const recommendation = highestRisk === "high" ? "NO-GO" : highestRisk === "medium" ? "CAUTION" : "GO";
   const rationale = segments.length
-    ? `Mission window crosses ${segments.length} TAF segment(s); highest forecast risk is ${highestRisk}.`
-    : "No usable TAF segment found for this mission window.";
+    ? `${segments.length === 1 ? "Okno misji obejmuje 1 segment TAF" : `Okno misji obejmuje ${segments.length} segmenty TAF`}; najwyższy poziom ryzyka: ${highestRisk === "high" ? "wysoki" : highestRisk === "medium" ? "umiarkowany" : "niski"}.`
+    : "Nie znaleziono użytecznego segmentu TAF dla tego okna misji.";
   return { departureHour, arrivalHour, segments, highestRisk, recommendation, rationale };
 }

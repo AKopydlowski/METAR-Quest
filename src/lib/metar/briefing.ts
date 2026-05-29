@@ -22,16 +22,31 @@ const CATEGORY_TONE: Record<FlightCategory, BriefingTone> = {
   LIFR: "danger",
 };
 
+const SKILL_LABELS: Record<string, string> = {
+  wind: "wiatr",
+  visibility: "widzialność",
+  clouds: "chmury i podstawa",
+  altimeter: "QNH / altimeter",
+  temperature: "temperatura i punkt rosy",
+  weather: "pogoda bieżąca",
+  taf: "TAF i trendy",
+  scan: "pełny skan METAR",
+};
+
+export function skillLabel(skill: string): string {
+  return SKILL_LABELS[skill] ?? skill;
+}
+
 export function formatWind(metar: ParsedMetar): string {
-  if (!metar.wind) return "wind not reported";
+  if (!metar.wind) return "wiatr nie został podany";
   const direction = metar.wind.direction === null ? "VRB" : `${metar.wind.direction}°`;
-  const gust = metar.wind.gustKt ? ` gusting ${metar.wind.gustKt} kt` : "";
-  const variable = metar.wind.variable ? `, variable ${metar.wind.variable[0]}°-${metar.wind.variable[1]}°` : "";
-  return `${direction} at ${metar.wind.speedKt} kt${gust}${variable}`;
+  const gust = metar.wind.gustKt ? `, porywy do ${metar.wind.gustKt} kt` : "";
+  const variable = metar.wind.variable ? `, zmienny ${metar.wind.variable[0]}°–${metar.wind.variable[1]}°` : "";
+  return `${direction}, ${metar.wind.speedKt} kt${gust}${variable}`;
 }
 
 export function formatClouds(metar: ParsedMetar): string {
-  if (!metar.clouds.length) return metar.visibility?.cavok ? "CAVOK / no significant cloud" : "no ceiling reported";
+  if (!metar.clouds.length) return metar.visibility?.cavok ? "CAVOK — bez istotnych chmur" : "brak raportowanej podstawy";
   return metar.clouds
     .map((cloud) => `${cloud.coverage}${cloud.baseFtAgl ? ` ${cloud.baseFtAgl} ft` : ""}${cloud.cloudType ? ` ${cloud.cloudType}` : ""}`)
     .join(", ");
@@ -53,28 +68,28 @@ export function buildPilotBriefing(metar: ParsedMetar): PilotBriefing {
   const alerts: string[] = profileAssessment.risks.map((risk) => risk.message);
 
   return {
-    title: `${metar.station} ${category} briefing`,
-    summary: `${category} with ${formatWind(metar)}, visibility ${metar.visibility?.raw ?? "not limited"}, clouds ${formatClouds(metar)}.`,
+    title: `${metar.station}: briefing ${category}`,
+    summary: `${category}. Wiatr: ${formatWind(metar)}. Widzialność: ${metar.visibility?.raw ?? "bez ograniczeń"}. Chmury: ${formatClouds(metar)}.`,
     goDecision: profileAssessment.expected,
     tone: profileAssessment.expected === "NO-GO" ? "danger" : profileAssessment.expected === "CAUTION" ? "watch" : CATEGORY_TONE[category],
     primaryRisk: profileAssessment.primaryRisk,
     keyToken: profileAssessment.keyToken || getKeyToken(metar),
     alerts: alerts.slice(0, 5),
-    trainingFocus: `practice ${profileAssessment.trainingFocus} recognition`,
+    trainingFocus: `ćwicz obszar: ${skillLabel(profileAssessment.trainingFocus)}`,
   };
 }
 
 export function getPilotRank(stats: { totalAnswered: number; accuracy: number; bestTimeAttack: number }): { rank: string; progress: number; next: string } {
   const score = stats.totalAnswered + stats.accuracy + stats.bestTimeAttack * 4;
-  if (score >= 260) return { rank: "Weather Ninja", progress: 100, next: "Keep defending your elite status with live missions." };
-  if (score >= 180) return { rank: "Instrument Student", progress: Math.round(((score - 180) / 80) * 100), next: "Reach 260 pilot XP for Weather Ninja." };
-  if (score >= 100) return { rank: "Private Pilot", progress: Math.round(((score - 100) / 80) * 100), next: "Reach 180 pilot XP for Instrument Student." };
-  return { rank: "Student Pilot", progress: Math.round(score), next: "Reach 100 pilot XP for Private Pilot." };
+  if (score >= 260) return { rank: "Mistrz pogody", progress: 100, next: "Utrzymaj elitarny poziom w misjach na żywo." };
+  if (score >= 180) return { rank: "Uczeń IFR", progress: Math.round(((score - 180) / 80) * 100), next: "Zdobądź 260 XP pilota, aby odblokować rangę Mistrz pogody." };
+  if (score >= 100) return { rank: "Pilot turystyczny", progress: Math.round(((score - 100) / 80) * 100), next: "Zdobądź 180 XP pilota, aby wejść na poziom Uczeń IFR." };
+  return { rank: "Uczeń pilot", progress: Math.round(score), next: "Zdobądź 100 XP pilota, aby odblokować rangę Pilot turystyczny." };
 }
 
 export function buildTrainingPlan(skills: SkillProgress[]): string[] {
   if (!skills.length) {
-    return ["Decode one sample METAR token-by-token.", "Finish one Classic quiz.", "Load live weather for your nearest ICAO station."];
+    return ["Rozkoduj jeden przykładowy METAR token po tokenie.", "Ukończ jedną klasyczną rundę quizu.", "Wczytaj pogodę na żywo dla najbliższego lotniska ICAO."];
   }
 
   const scored = skills
@@ -84,10 +99,11 @@ export function buildTrainingPlan(skills: SkillProgress[]): string[] {
     })
     .sort((a, b) => a.accuracy - b.accuracy || b.total - a.total);
   const weakest = scored[0];
+  const label = skillLabel(weakest.skill);
 
   return [
-    `Warm-up: 3 decoded examples focused on ${weakest.skill}.`,
-    `Drill: 10 quiz questions; stop and read every explanation for ${weakest.skill}.`,
-    "Mission: load a live METAR and make a GO / CAUTION / NO-GO call.",
+    `Rozgrzewka: 3 przykłady METAR z naciskiem na ${label}.`,
+    `Ćwiczenie: 10 pytań quizowych — po każdej odpowiedzi przeczytaj wyjaśnienie (${label}).`,
+    "Misja: wczytaj METAR na żywo i podejmij decyzję GO / CAUTION / NO-GO.",
   ];
 }

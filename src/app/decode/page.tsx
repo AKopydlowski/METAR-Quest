@@ -59,7 +59,7 @@ export default function DecodePage() {
       <section className="rounded-[2rem] border border-sky-300/20 bg-slate-950/75 p-6 text-white shadow-2xl shadow-sky-950/30">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">{pl ? "Dekoder kinowy" : "Cinematic decoder"}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">{pl ? "Dekoder METAR" : "Cinematic decoder"}</p>
             <h1 className="mt-2 text-4xl font-black">{pl ? "Rozbij METAR token po tokenie" : "Break METAR down token by token"}</h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-300">{pl ? "Kliknij dowolny token, zobacz jego znaczenie i natychmiast połącz go z kategorią lotu." : "Click any token, understand its meaning and connect it instantly to the flight category."}</p>
           </div>
@@ -108,15 +108,15 @@ export default function DecodePage() {
               <div className="rounded-3xl border border-zinc-300/20 bg-[var(--surface)]/90 p-5 text-sm shadow-xl">
                 <h2 className="font-semibold">{pl ? "Zdekodowane grupy" : "Decoded groups"}</h2>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  <p><strong>Station:</strong> {parsed.station}</p>
-                  <p><strong>Observed:</strong> {parsed.observedAt ?? "Unknown"}</p>
-                  <p><strong>Wind:</strong> {parsed.wind ? `${parsed.wind.direction ?? "VRB"}° ${parsed.wind.speedKt}KT${parsed.wind.gustKt ? ` G${parsed.wind.gustKt}` : ""}${parsed.wind.variable ? ` variable ${parsed.wind.variable[0]}-${parsed.wind.variable[1]}` : ""}` : "Unknown"}</p>
-                  <p><strong>Visibility:</strong> {parsed.visibility ? `${parsed.visibility.statuteMiles} SM (${parsed.visibility.raw})` : "Unknown"}</p>
-                  <p><strong>Ceiling/Clouds:</strong> {parsed.clouds.length ? parsed.clouds.map((c) => `${c.coverage}${c.baseFtAgl ? ` ${c.baseFtAgl}ft` : ""}${c.cloudType ? ` ${c.cloudType}` : ""}`).join(", ") : "None reported"}</p>
-                  <p><strong>Weather:</strong> {parsed.weatherCodes.length ? parsed.weatherCodes.join(", ") : "None"}</p>
-                  <p><strong>RVR:</strong> {parsed.runwayVisualRange.length ? parsed.runwayVisualRange.map((rvr) => `${rvr.runway}: ${rvr.rangeFt ?? rvr.rangeMeters}${rvr.rangeFt ? " ft" : " m"}`).join(", ") : "None"}</p>
-                  <p><strong>Altimeter:</strong> {parsed.altimeter ? parsed.altimeter.hectopascals ? `${parsed.altimeter.hectopascals} hPa` : `${parsed.altimeter.inchesHg.toFixed(2)} inHg` : "Unknown"}</p>
-                  <p><strong>Flight category:</strong> {parsed.flightCategory}</p>
+                  <p><strong>Stacja:</strong> {parsed.station}</p>
+                  <p><strong>Obserwacja:</strong> {parsed.observedAt ?? "Brak danych"}</p>
+                  <p><strong>Wiatr:</strong> {parsed.wind ? `${parsed.wind.direction ?? "VRB"}° ${parsed.wind.speedKt}KT${parsed.wind.gustKt ? ` G${parsed.wind.gustKt}` : ""}${parsed.wind.variable ? ` zmienny ${parsed.wind.variable[0]}-${parsed.wind.variable[1]}` : ""}` : "Brak danych"}</p>
+                  <p><strong>Widzialność:</strong> {parsed.visibility ? `${parsed.visibility.statuteMiles} SM (${parsed.visibility.raw})` : "Brak danych"}</p>
+                  <p><strong>Podstawa / chmury:</strong> {parsed.clouds.length ? parsed.clouds.map((c) => `${c.coverage}${c.baseFtAgl ? ` ${c.baseFtAgl}ft` : ""}${c.cloudType ? ` ${c.cloudType}` : ""}`).join(", ") : "Brak raportu"}</p>
+                  <p><strong>Pogoda:</strong> {parsed.weatherCodes.length ? parsed.weatherCodes.join(", ") : "Brak"}</p>
+                  <p><strong>RVR:</strong> {parsed.runwayVisualRange.length ? parsed.runwayVisualRange.map((rvr) => `${rvr.runway}: ${rvr.rangeFt ?? rvr.rangeMeters}${rvr.rangeFt ? " ft" : " m"}`).join(", ") : "Brak"}</p>
+                  <p><strong>QNH / altimeter:</strong> {parsed.altimeter ? parsed.altimeter.hectopascals ? `${parsed.altimeter.hectopascals} hPa` : `${parsed.altimeter.inchesHg.toFixed(2)} inHg` : "Brak danych"}</p>
+                  <p><strong>Kategoria lotu:</strong> {parsed.flightCategory}</p>
                 </div>
               </div>
             </>
@@ -130,7 +130,7 @@ export default function DecodePage() {
               <li>{pl ? "Sprawdź BKN/OVC/VV jako podstawę chmur." : "Check BKN/OVC/VV for ceiling."}</li>
               <li>{pl ? "Użyj widzialności i podstawy dla VFR/MVFR/IFR/LIFR." : "Use visibility and ceiling for VFR/MVFR/IFR/LIFR."}</li>
             </ol>
-            <Link href="/missions" className="mt-4 inline-flex rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400">{pl ? "Sprawdź w misji live" : "Try it in a live mission"}</Link>
+            <Link href="/missions" className="mt-4 inline-flex rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400">{pl ? "Sprawdź w misji na żywo" : "Try it in a live mission"}</Link>
           </aside>
         </div>
       )}

@@ -38,7 +38,7 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
       id: "visibility-minimum",
       severity: "danger",
       token: metar.visibility?.raw ?? findToken(metar, /SM$|^\d{4}$|CAVOK/),
-      message: `Visibility ${metar.visibility?.raw ?? visibility} is below ${profile.label} minimum (${minima.minimumVisibilitySm} SM).`,
+      message: `Widzialność ${metar.visibility?.raw ?? visibility} jest poniżej minimum profilu ${profile.pl} (${minima.minimumVisibilitySm} SM).`,
       skillTag: "visibility",
     });
   } else if (visibility < minima.cautionVisibilitySm) {
@@ -46,7 +46,7 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
       id: "visibility-caution",
       severity: "caution",
       token: metar.visibility?.raw ?? findToken(metar, /SM$|^\d{4}$|CAVOK/),
-      message: `Visibility is usable but inside the caution band for ${profile.label}.`,
+      message: `Widzialność jest używalna, ale pozostaje w strefie ostrożności dla profilu ${profile.pl}.`,
       skillTag: "visibility",
     });
   }
@@ -56,7 +56,7 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
       id: "ceiling-minimum",
       severity: "danger",
       token: findToken(metar, /^(BKN|OVC|VV)\d{3}/),
-      message: `Ceiling ${ceiling} ft is below ${profile.label} minimum (${minima.minimumCeilingFt} ft).`,
+      message: `Podstawa ${ceiling} ft jest poniżej minimum profilu ${profile.pl} (${minima.minimumCeilingFt} ft).`,
       skillTag: "clouds",
     });
   } else if (ceiling < minima.cautionCeilingFt) {
@@ -64,7 +64,7 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
       id: "ceiling-caution",
       severity: "caution",
       token: findToken(metar, /^(BKN|OVC|VV)\d{3}/),
-      message: `Ceiling ${ceiling} ft is marginal for this profile.`,
+      message: `Podstawa ${ceiling} ft jest marginalna dla tego profilu.`,
       skillTag: "clouds",
     });
   }
@@ -74,7 +74,7 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
       id: "wind-speed",
       severity: "danger",
       token: findToken(metar, /KT$/),
-      message: `Wind ${metar.wind.speedKt} kt exceeds this profile's wind limit (${minima.maxWindKt} kt).`,
+      message: `Wiatr ${metar.wind.speedKt} kt przekracza limit profilu (${minima.maxWindKt} kt).`,
       skillTag: "wind",
     });
   } else if (gustSpread > minima.maxGustSpreadKt) {
@@ -82,7 +82,7 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
       id: "gust-spread",
       severity: "caution",
       token: findToken(metar, /G\d{2,3}KT$/),
-      message: `Gust spread ${gustSpread} kt requires extra handling margin.`,
+      message: `Różnica porywów ${gustSpread} kt wymaga dodatkowego marginesu pilotażowego.`,
       skillTag: "wind",
     });
   }
@@ -92,7 +92,7 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
       id: "forbidden-weather",
       severity: weatherHit.includes("TS") || weatherHit.includes("FZ") || weatherHit.startsWith("+") ? "danger" : "caution",
       token: weatherHit,
-      message: `${weatherHit} is a profile-specific threat for ${profile.label}.`,
+      message: `${weatherHit} jest istotnym zagrożeniem dla profilu ${profile.pl}.`,
       skillTag: "weather",
     });
   }
@@ -102,7 +102,7 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
       id: "rvr",
       severity: "caution",
       token: metar.runwayVisualRange[0].raw,
-      message: "RVR is reported, so runway-specific visibility must be briefed.",
+      message: "Raport zawiera RVR — trzeba osobno omówić widzialność na pasie.",
       skillTag: "visibility",
     });
   }
@@ -112,7 +112,7 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
       id: "trend",
       severity: "caution",
       token: metar.trend[0],
-      message: "Trend group suggests the current snapshot may change during the mission window.",
+      message: "Grupa trendu sugeruje, że pogoda może zmienić się w oknie misji.",
       skillTag: "taf",
     });
   }
@@ -122,7 +122,7 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
       id: "vfr-baseline",
       severity: "info",
       token: metar.flightCategory ?? "VFR",
-      message: "No profile-specific stopper detected; keep a normal scan of wind, visibility, ceiling and trend.",
+      message: "Brak blokady dla profilu — wykonaj standardowy skan wiatru, widzialności, podstawy i trendu.",
       skillTag: "scan",
     });
   }
@@ -133,11 +133,11 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
     .filter((risk) => risk.severity !== "info")
     .slice(0, 3)
     .map((risk) => {
-      if (risk.skillTag === "visibility") return `Visibility above ${minima.cautionVisibilitySm} SM would move this closer to GO.`;
-      if (risk.skillTag === "clouds") return `Ceiling above ${minima.cautionCeilingFt} ft would reduce the profile risk.`;
-      if (risk.skillTag === "wind") return `Lower steady wind or gust spread below ${minima.maxGustSpreadKt} kt would reduce handling risk.`;
-      if (risk.skillTag === "weather") return `Removing ${risk.token} from the report would reduce operational threat.`;
-      return `Re-check ${risk.token} before changing the call.`;
+      if (risk.skillTag === "visibility") return `Widzialność powyżej ${minima.cautionVisibilitySm} SM przybliżyłaby decyzję do GO.`;
+      if (risk.skillTag === "clouds") return `Podstawa powyżej ${minima.cautionCeilingFt} ft obniżyłaby ryzyko profilu.`;
+      if (risk.skillTag === "wind") return `Niższy wiatr stały albo różnica porywów poniżej ${minima.maxGustSpreadKt} kt zmniejszyłaby ryzyko pilotażowe.`;
+      if (risk.skillTag === "weather") return `Brak ${risk.token} w raporcie zmniejszyłby zagrożenie operacyjne.`;
+      return `Sprawdź ponownie ${risk.token}, zanim zmienisz decyzję.`;
     });
 
   return {
@@ -145,10 +145,10 @@ export function assessWeatherDecision(profileId: MissionProfile, metar: ParsedMe
     expected,
     match: decision ? decision === expected : false,
     score: decision ? (decision === expected ? 100 : expected === "CAUTION" || decision === "CAUTION" ? 65 : 35) : 0,
-    primaryRisk: primary?.message ?? "No major risk detected.",
+    primaryRisk: primary?.message ?? "Nie wykryto istotnego ryzyka.",
     keyToken: primary?.token ?? metar.flightCategory ?? "METAR",
     risks,
     trainingFocus: primary?.skillTag ?? "scan",
-    whatWouldImprove: whatWouldImprove.length ? whatWouldImprove : ["Keep monitoring TAF and nearby alternates before launch."],
+    whatWouldImprove: whatWouldImprove.length ? whatWouldImprove : ["Przed odlotem nadal monitoruj TAF i pobliskie lotniska zapasowe."],
   };
 }

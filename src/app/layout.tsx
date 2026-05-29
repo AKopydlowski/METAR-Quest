@@ -4,8 +4,8 @@ import AppShell from "@/components/layout/AppShell";
 import PwaRegister from "@/components/pwa/PwaRegister";
 
 export const metadata: Metadata = {
-  title: "METAR Quest — Pilot Weather Trainer",
-  description: "Interactive METAR decoder, live weather briefing and aviation weather mission trainer.",
+  title: "METAR Quest — trener pogody lotniczej",
+  description: "Interaktywny dekoder METAR, briefing pogody na żywo i trening decyzji lotniczych.",
   manifest: "/manifest.json",
 };
 
@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="pl" className="h-full antialiased">
       <body className="min-h-full flex flex-col"><AppShell>{children}<PwaRegister /></AppShell></body>
     </html>
   );
