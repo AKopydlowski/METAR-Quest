@@ -1,15 +1,45 @@
+import Link from "next/link";
 import { metarExamples } from "@/lib/metar/examples";
 import { metarGlossary } from "@/lib/metar/glossary";
 
+const MODULES = [
+  { id: "station-time", title: "Station + time", skill: "scan", goal: "Find the ICAO identifier and UTC observation timestamp before reading risk." },
+  { id: "wind", title: "Wind", skill: "wind", goal: "Read direction, steady speed, variable sector and gust spread." },
+  { id: "visibility", title: "Visibility", skill: "visibility", goal: "Convert meters, statute miles, CAVOK and RVR into operational visibility." },
+  { id: "clouds", title: "Ceiling/clouds", skill: "clouds", goal: "Identify BKN/OVC/VV ceilings and convective cloud flags." },
+  { id: "weather", title: "Present weather", skill: "weather", goal: "Spot TS, FG, FZ, SN, RA and other mission-changing weather groups." },
+  { id: "altimeter", title: "Altimeter/QNH", skill: "altimeter", goal: "Read Q and A groups correctly for cockpit setup." },
+  { id: "taf", title: "TAF trends", skill: "weather", goal: "Use TEMPO, BECMG and PROB groups to brief what can change next." },
+  { id: "decision", title: "GO / CAUTION / NO-GO", skill: "clouds", goal: "Turn METAR tokens into a conservative pilot decision." },
+];
+
 export default function LearnPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-sky-100 via-cyan-50 to-white px-6 py-8 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      <div className="mx-auto w-full max-w-5xl">
-      <h1 className="text-3xl font-bold text-sky-900 dark:text-sky-100">Learn</h1>
-      <p className="mt-2 text-sky-800/90 dark:text-sky-200">Practice with real METAR samples and all key METAR groups/codes.</p>
+    <div className="w-full space-y-8">
+      <section className="rounded-[2rem] border border-sky-300/20 bg-slate-950/80 p-6 text-white shadow-2xl shadow-sky-950/30">
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">Training syllabus</p>
+        <h1 className="mt-2 text-4xl font-black">Learn METAR by mission skill</h1>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
+          Each module is designed as a short loop: read the rule, decode one sample, answer focused quiz questions, then apply it in a live mission.
+        </p>
+      </section>
 
-      <section className="mt-6">
-        <h2 className="text-lg font-semibold text-indigo-900 dark:text-indigo-100">METAR glossary (full basics)</h2>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {MODULES.map((module, index) => (
+          <article key={module.id} className="rounded-3xl border border-sky-300/20 bg-[var(--surface)]/90 p-5 shadow-xl">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">Module {index + 1}</p>
+            <h2 className="mt-2 text-xl font-bold">{module.title}</h2>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">{module.goal}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href={`/quiz?skill=${module.skill}`} className="rounded-xl bg-cyan-400 px-3 py-2 text-xs font-black text-slate-950">Drill</Link>
+              <Link href="/missions" className="rounded-xl border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200">Mission</Link>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold text-indigo-900 dark:text-indigo-100">METAR glossary</h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           {metarGlossary.map((entry) => (
             <article key={entry.term} className="rounded-xl border border-sky-200 bg-white/90 p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/80">
@@ -20,7 +50,7 @@ export default function LearnPage() {
         </div>
       </section>
 
-      <section className="mt-8">
+      <section>
         <h2 className="text-lg font-semibold text-violet-900 dark:text-violet-100">Real examples</h2>
         <div className="mt-4 grid gap-4">
           {metarExamples.map((example) => (
@@ -33,7 +63,6 @@ export default function LearnPage() {
           ))}
         </div>
       </section>
-      </div>
-    </main>
+    </div>
   );
 }

@@ -97,7 +97,7 @@ export default function ProgressPage() {
         <ol className="mt-4 grid gap-3 md:grid-cols-3">
           {trainingPlan.map((item, index) => <li key={item} className="rounded-2xl border border-white/10 bg-black/15 p-4"><span className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Step {index + 1}</span><p className="mt-2 text-sm">{item}</p></li>)}
         </ol>
-        <Link href="/missions" className="mt-4 inline-flex rounded-xl bg-emerald-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-emerald-300">{pl ? "Start misji" : "Start mission"}</Link>
+        <div className="mt-4 flex flex-wrap gap-2"><Link href="/missions" className="inline-flex rounded-xl bg-emerald-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-emerald-300">{pl ? "Daily Live Mission" : "Daily Live Mission"}</Link><Link href={weakest ? `/quiz?skill=${encodeURIComponent(weakest.skillTag)}` : "/quiz"} className="inline-flex rounded-xl border border-emerald-300/40 px-4 py-2 text-sm font-bold text-emerald-200 hover:bg-emerald-500/10">{pl ? "Ćwicz słaby obszar" : "Drill weak area"}</Link></div>
       </section>
 
       <section className="rounded-3xl border border-slate-500/30 bg-[var(--surface)]/90 p-5 shadow-xl">

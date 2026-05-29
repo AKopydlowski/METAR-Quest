@@ -1,5 +1,6 @@
 import type { FlightCategory, ParsedMetar } from "@/types/metar";
 import type { SkillProgress } from "@/types/progress";
+import { assessWeatherDecision } from "@/lib/decision/decisionEngine";
 
 export type BriefingTone = "calm" | "watch" | "danger";
 
@@ -36,13 +37,6 @@ export function formatClouds(metar: ParsedMetar): string {
     .join(", ");
 }
 
-function lowestCeiling(metar: ParsedMetar): number | undefined {
-  return metar.clouds
-    .filter((cloud) => ["BKN", "OVC", "VV"].includes(cloud.coverage) && cloud.baseFtAgl)
-    .map((cloud) => cloud.baseFtAgl as number)
-    .sort((a, b) => a - b)[0];
-}
-
 function getKeyToken(metar: ParsedMetar): string {
   const tokens = metar.rawText.split(/\s+/);
   const ceiling = tokens.find((token) => /^(BKN|OVC|VV)\d{3}/.test(token));
@@ -55,44 +49,18 @@ function getKeyToken(metar: ParsedMetar): string {
 
 export function buildPilotBriefing(metar: ParsedMetar): PilotBriefing {
   const category = metar.flightCategory ?? "VFR";
-  const alerts: string[] = [];
-  const ceiling = lowestCeiling(metar);
-  const visibility = metar.visibility?.statuteMiles ?? 10;
-
-  if (category === "LIFR") alerts.push("Very low ceiling/visibility: treat as a serious instrument-weather scenario.");
-  else if (category === "IFR") alerts.push("Instrument conditions: VFR training should stop here unless this is a simulator scenario.");
-  else if (category === "MVFR") alerts.push("Marginal VFR: continue only with strong situational awareness and alternates.");
-  else alerts.push("VFR baseline: no major category restriction detected from visibility/ceiling.");
-
-  if (ceiling && ceiling <= 3000) alerts.push(`Ceiling driver: ${ceiling} ft AGL.`);
-  if (visibility <= 5) alerts.push(`Visibility driver: ${metar.visibility?.raw ?? visibility} reported.`);
-  if (metar.wind?.gustKt) alerts.push(`Gust spread: ${metar.wind.gustKt - metar.wind.speedKt} kt above steady wind.`);
-  if (metar.weatherCodes.length) alerts.push(`Present weather: ${metar.weatherCodes.join(", ")}.`);
-  if (metar.runwayVisualRange.length) alerts.push("RVR is reported, so runway-specific visibility matters.");
-  if (metar.trend?.includes("TEMPO")) alerts.push("TEMPO trend: short-term conditions may differ from the main report.");
-
-  const primaryRisk =
-    category === "VFR"
-      ? metar.wind?.gustKt
-        ? "gust management"
-        : "maintaining scan discipline"
-      : ceiling && visibility <= 5
-        ? "low ceiling and restricted visibility"
-        : ceiling
-          ? "ceiling"
-          : visibility <= 5
-            ? "visibility"
-            : "weather deterioration";
+  const profileAssessment = assessWeatherDecision("ppl-vfr", metar);
+  const alerts: string[] = profileAssessment.risks.map((risk) => risk.message);
 
   return {
     title: `${metar.station} ${category} briefing`,
     summary: `${category} with ${formatWind(metar)}, visibility ${metar.visibility?.raw ?? "not limited"}, clouds ${formatClouds(metar)}.`,
-    goDecision: category === "VFR" ? "GO" : category === "MVFR" ? "CAUTION" : "NO-GO",
-    tone: CATEGORY_TONE[category],
-    primaryRisk,
-    keyToken: getKeyToken(metar),
+    goDecision: profileAssessment.expected,
+    tone: profileAssessment.expected === "NO-GO" ? "danger" : profileAssessment.expected === "CAUTION" ? "watch" : CATEGORY_TONE[category],
+    primaryRisk: profileAssessment.primaryRisk,
+    keyToken: profileAssessment.keyToken || getKeyToken(metar),
     alerts: alerts.slice(0, 5),
-    trainingFocus: category === "VFR" ? "speed-read wind, visibility and QNH" : "identify the exact token that changes the flight category",
+    trainingFocus: `practice ${profileAssessment.trainingFocus} recognition`,
   };
 }
 

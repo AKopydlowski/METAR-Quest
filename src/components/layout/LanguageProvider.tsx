@@ -17,6 +17,7 @@ const translations: Record<Language, Dict> = {
     realWeather: "Real Weather",
     missions: "Missions",
     progress: "Progress",
+    onboarding: "Training Plan",
     chooseLanguage: "Language",
     heroTitle: "Decode aviation weather reports with speed and confidence.",
     heroDesc:
@@ -70,6 +71,7 @@ const translations: Record<Language, Dict> = {
     realWeather: "Pogoda na żywo",
     missions: "Misje",
     progress: "Postęp",
+    onboarding: "Plan treningu",
     chooseLanguage: "Język",
     heroTitle: "Odczytuj raporty pogodowe lotnicze szybko i pewnie.",
     heroDesc:

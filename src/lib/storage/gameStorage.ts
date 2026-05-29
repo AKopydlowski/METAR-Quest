@@ -69,5 +69,8 @@ export function getAchievements(stats: { quizAccuracy: number; totalAnswered: nu
     { id: "first-steps", name: "First Steps", unlocked: stats.totalAnswered >= 10 },
     { id: "metar-master", name: "METAR Master", unlocked: stats.quizAccuracy >= 80 },
     { id: "speedster", name: "Speedster", unlocked: stats.bestTimeAttack >= 8 },
+    { id: "crosswind-spotter", name: "Crosswind Spotter", unlocked: stats.totalAnswered >= 25 && stats.bestTimeAttack >= 12 },
+    { id: "ifr-ceiling-hunter", name: "IFR Ceiling Hunter", unlocked: stats.quizAccuracy >= 85 && stats.totalAnswered >= 40 },
+    { id: "daily-dispatch", name: "Daily Dispatch", unlocked: stats.totalAnswered >= 60 },
   ];
 }
