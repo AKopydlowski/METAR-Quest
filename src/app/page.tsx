@@ -71,6 +71,7 @@ export default function Home() {
             { href: "/learn", title: t("learnTitle"), desc: t("learnDesc") },
             { href: "/time-attack", title: t("timeAttack"), desc: pl ? "Arcade training z combo, rangami i rekordami." : "Arcade training with combo, ranks and records." },
             { href: "/real-weather", title: t("realWeather"), desc: pl ? "Live METAR/TAF z briefingiem pilota." : "Live METAR/TAF with pilot briefing." },
+            { href: "/briefing-lab", title: "Briefing Lab", desc: pl ? "Trasa, crosswind, replay pogody i debrief instruktora." : "Route, crosswind, weather replay and instructor debrief." },
             { href: "/progress", title: t("progress"), desc: pl ? "Ranga pilota, odznaki i plan treningu." : "Pilot rank, badges and training plan." },
           ].map((item) => (
             <Link key={item.href} href={item.href} className="rounded-2xl border border-slate-500/40 bg-[var(--surface)]/85 p-6 transition hover:-translate-y-1 hover:border-sky-400/50">

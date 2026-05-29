@@ -20,6 +20,7 @@ METAR Quest is an educational aviation weather app for learning how to decode ME
 - Pilot ranks, achievements, weak-area analysis, and personalized training plans
 - Adaptive Training 2.0 mastery model with spaced-review priorities
 - TAF risk timeline with mission-window GO / CAUTION / NO-GO assessment
+- Briefing Lab with full route briefing, crosswind calculator, replay weather scenarios, instructor-style debriefs, and certification roadmap
 - Alternate-airport comparison for live missions
 - Dedicated exam mode with 80% pass mark
 - Local leaderboard by quiz, Time Attack, missions, and exam
@@ -53,6 +54,9 @@ Time-based mode (60s) with combo and score multiplier.
 
 ### Real Weather
 Fetches live METAR/TAF data by ICAO code using the AviationWeather API, turns it into a pilot-friendly briefing, and visualizes forecast risk on a TAF timeline.
+
+### Briefing Lab
+Combines live departure/destination/alternate weather, runway crosswind calculations, deterministic instructor-style debriefs, historical weather replay scenarios, and a certification path from METAR basics to Briefing Captain.
 
 ### Missions
 Scenario mode where the user loads live weather, chooses a pilot profile, sets a mission window and alternate airport, and makes a GO / CAUTION / NO-GO decision with a profile-aware decision engine, risk tokens, improvement hints, and shareable mission results.
